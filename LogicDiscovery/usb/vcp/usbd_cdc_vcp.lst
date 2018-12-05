@@ -1,0 +1,937 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"usbd_cdc_vcp.c"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.syntax unified
+  18              		.thumb
+  19              		.thumb_func
+  20              		.fpu fpv4-sp-d16
+  22              	VCP_Init:
+  23              	.LFB110:
+  24              		.file 1 "./usb/vcp/usbd_cdc_vcp.c"
+   1:./usb/vcp/usbd_cdc_vcp.c **** /**
+   2:./usb/vcp/usbd_cdc_vcp.c ****   ******************************************************************************
+   3:./usb/vcp/usbd_cdc_vcp.c ****   * @file    usbd_cdc_vcp.c
+   4:./usb/vcp/usbd_cdc_vcp.c ****   * @author  MCD Application Team
+   5:./usb/vcp/usbd_cdc_vcp.c ****   * @version V1.1.0
+   6:./usb/vcp/usbd_cdc_vcp.c ****   * @date    19-March-2012
+   7:./usb/vcp/usbd_cdc_vcp.c ****   * @brief   Generic media access Layer.
+   8:./usb/vcp/usbd_cdc_vcp.c ****   ******************************************************************************
+   9:./usb/vcp/usbd_cdc_vcp.c ****   * @attention
+  10:./usb/vcp/usbd_cdc_vcp.c ****   *
+  11:./usb/vcp/usbd_cdc_vcp.c ****   * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  12:./usb/vcp/usbd_cdc_vcp.c ****   *
+  13:./usb/vcp/usbd_cdc_vcp.c ****   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  14:./usb/vcp/usbd_cdc_vcp.c ****   * You may not use this file except in compliance with the License.
+  15:./usb/vcp/usbd_cdc_vcp.c ****   * You may obtain a copy of the License at:
+  16:./usb/vcp/usbd_cdc_vcp.c ****   *
+  17:./usb/vcp/usbd_cdc_vcp.c ****   *        http://www.st.com/software_license_agreement_liberty_v2
+  18:./usb/vcp/usbd_cdc_vcp.c ****   *
+  19:./usb/vcp/usbd_cdc_vcp.c ****   * Unless required by applicable law or agreed to in writing, software 
+  20:./usb/vcp/usbd_cdc_vcp.c ****   * distributed under the License is distributed on an "AS IS" BASIS, 
+  21:./usb/vcp/usbd_cdc_vcp.c ****   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  22:./usb/vcp/usbd_cdc_vcp.c ****   * See the License for the specific language governing permissions and
+  23:./usb/vcp/usbd_cdc_vcp.c ****   * limitations under the License.
+  24:./usb/vcp/usbd_cdc_vcp.c ****   *
+  25:./usb/vcp/usbd_cdc_vcp.c ****   ******************************************************************************
+  26:./usb/vcp/usbd_cdc_vcp.c ****   */ 
+  27:./usb/vcp/usbd_cdc_vcp.c **** 
+  28:./usb/vcp/usbd_cdc_vcp.c **** #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED 
+  29:./usb/vcp/usbd_cdc_vcp.c **** #pragma     data_alignment = 4 
+  30:./usb/vcp/usbd_cdc_vcp.c **** #endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
+  31:./usb/vcp/usbd_cdc_vcp.c **** 
+  32:./usb/vcp/usbd_cdc_vcp.c **** /* Includes ------------------------------------------------------------------*/
+  33:./usb/vcp/usbd_cdc_vcp.c **** #include "usbd_cdc_vcp.h"
+  34:./usb/vcp/usbd_cdc_vcp.c **** #include "usb_conf.h"
+  35:./usb/vcp/usbd_cdc_vcp.c **** #include "sump.h"
+  36:./usb/vcp/usbd_cdc_vcp.c **** 
+  37:./usb/vcp/usbd_cdc_vcp.c **** /* Private typedef -----------------------------------------------------------*/
+  38:./usb/vcp/usbd_cdc_vcp.c **** /* Private define ------------------------------------------------------------*/
+  39:./usb/vcp/usbd_cdc_vcp.c **** /* Private macro -------------------------------------------------------------*/
+  40:./usb/vcp/usbd_cdc_vcp.c **** /* Private variables ---------------------------------------------------------*/
+  41:./usb/vcp/usbd_cdc_vcp.c **** LINE_CODING linecoding =
+  42:./usb/vcp/usbd_cdc_vcp.c ****   {
+  43:./usb/vcp/usbd_cdc_vcp.c ****     115200, /* baud rate*/
+  44:./usb/vcp/usbd_cdc_vcp.c ****     0x00,   /* stop bits-1*/
+  45:./usb/vcp/usbd_cdc_vcp.c ****     0x00,   /* parity - none*/
+  46:./usb/vcp/usbd_cdc_vcp.c ****     0x08    /* nb. of bits 8*/
+  47:./usb/vcp/usbd_cdc_vcp.c ****   };
+  48:./usb/vcp/usbd_cdc_vcp.c **** 
+  49:./usb/vcp/usbd_cdc_vcp.c **** 
+  50:./usb/vcp/usbd_cdc_vcp.c **** USART_InitTypeDef USART_InitStructure;
+  51:./usb/vcp/usbd_cdc_vcp.c **** 
+  52:./usb/vcp/usbd_cdc_vcp.c **** /* These are external variables imported from CDC core to be used for IN 
+  53:./usb/vcp/usbd_cdc_vcp.c ****    transfer management. */
+  54:./usb/vcp/usbd_cdc_vcp.c **** extern uint8_t  APP_Rx_Buffer []; /* Write CDC received data in this buffer.
+  55:./usb/vcp/usbd_cdc_vcp.c ****                                      These data will be sent over USB IN endpoint
+  56:./usb/vcp/usbd_cdc_vcp.c ****                                      in the CDC core functions. */
+  57:./usb/vcp/usbd_cdc_vcp.c **** extern uint32_t APP_Rx_ptr_in;    /* Increment this pointer or roll it back to
+  58:./usb/vcp/usbd_cdc_vcp.c ****                                      start address when writing received data
+  59:./usb/vcp/usbd_cdc_vcp.c ****                                      in the buffer APP_Rx_Buffer. */
+  60:./usb/vcp/usbd_cdc_vcp.c **** 
+  61:./usb/vcp/usbd_cdc_vcp.c **** /* Private function prototypes -----------------------------------------------*/
+  62:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_Init     (void);
+  63:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DeInit   (void);
+  64:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_Ctrl     (uint32_t Cmd, uint8_t* Buf, uint32_t Len);
+  65:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DataTx   (uint8_t* Buf, uint32_t Len);
+  66:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DataRx   (uint8_t* Buf, uint32_t Len);
+  67:./usb/vcp/usbd_cdc_vcp.c **** uint16_t VCP_ByteTx (uint8_t dataByte);
+  68:./usb/vcp/usbd_cdc_vcp.c **** 
+  69:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_COMConfig(uint8_t Conf);
+  70:./usb/vcp/usbd_cdc_vcp.c **** 
+  71:./usb/vcp/usbd_cdc_vcp.c **** CDC_IF_Prop_TypeDef VCP_fops = 
+  72:./usb/vcp/usbd_cdc_vcp.c **** {
+  73:./usb/vcp/usbd_cdc_vcp.c ****   VCP_Init,
+  74:./usb/vcp/usbd_cdc_vcp.c ****   VCP_DeInit,
+  75:./usb/vcp/usbd_cdc_vcp.c ****   VCP_Ctrl,
+  76:./usb/vcp/usbd_cdc_vcp.c ****   VCP_DataTx,
+  77:./usb/vcp/usbd_cdc_vcp.c ****   VCP_DataRx
+  78:./usb/vcp/usbd_cdc_vcp.c **** };
+  79:./usb/vcp/usbd_cdc_vcp.c **** 
+  80:./usb/vcp/usbd_cdc_vcp.c **** /* Private functions ---------------------------------------------------------*/
+  81:./usb/vcp/usbd_cdc_vcp.c **** /**
+  82:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_Init
+  83:./usb/vcp/usbd_cdc_vcp.c ****   *         Initializes the Media on the STM32
+  84:./usb/vcp/usbd_cdc_vcp.c ****   * @param  None
+  85:./usb/vcp/usbd_cdc_vcp.c ****   * @retval Result of the opeartion (USBD_OK in all cases)
+  86:./usb/vcp/usbd_cdc_vcp.c ****   */
+  87:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_Init(void)
+  88:./usb/vcp/usbd_cdc_vcp.c **** {
+  25              		.loc 1 88 0
+  26              		.cfi_startproc
+  27              		@ args = 0, pretend = 0, frame = 0
+  28              		@ frame_needed = 0, uses_anonymous_args = 0
+  29              		@ link register save eliminated.
+  89:./usb/vcp/usbd_cdc_vcp.c ****   NVIC_InitTypeDef NVIC_InitStructure;
+  90:./usb/vcp/usbd_cdc_vcp.c ****   
+  91:./usb/vcp/usbd_cdc_vcp.c ****   /* EVAL_COM1 default configuration */
+  92:./usb/vcp/usbd_cdc_vcp.c ****   /* EVAL_COM1 configured as follow:
+  93:./usb/vcp/usbd_cdc_vcp.c ****         - BaudRate = 115200 baud  
+  94:./usb/vcp/usbd_cdc_vcp.c ****         - Word Length = 8 Bits
+  95:./usb/vcp/usbd_cdc_vcp.c ****         - One Stop Bit
+  96:./usb/vcp/usbd_cdc_vcp.c ****         - Parity Odd
+  97:./usb/vcp/usbd_cdc_vcp.c ****         - Hardware flow control disabled
+  98:./usb/vcp/usbd_cdc_vcp.c ****         - Receive and transmit enabled
+  99:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 100:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_BaudRate = 115200;
+  30              		.loc 1 100 0
+  31 0000 044B     		ldr	r3, .L2
+  32 0002 0020     		movs	r0, #0
+  33 0004 4FF4E132 		mov	r2, #115200
+  34 0008 C3E90020 		strd	r2, r0, [r3]
+ 101:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 102:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  35              		.loc 1 102 0
+  36 000c 024A     		ldr	r2, .L2+4
+  37 000e 9A60     		str	r2, [r3, #8]
+ 103:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_Parity = USART_Parity_Odd;
+ 104:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 105:./usb/vcp/usbd_cdc_vcp.c ****   USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  38              		.loc 1 105 0
+  39 0010 9881     		strh	r0, [r3, #12]	@ movhi
+ 106:./usb/vcp/usbd_cdc_vcp.c **** 
+ 107:./usb/vcp/usbd_cdc_vcp.c **** //  /* Configure and enable the USART */
+ 108:./usb/vcp/usbd_cdc_vcp.c **** //  STM_EVAL_COMInit(COM1, &USART_InitStructure);
+ 109:./usb/vcp/usbd_cdc_vcp.c **** //
+ 110:./usb/vcp/usbd_cdc_vcp.c **** //  /* Enable the USART Receive interrupt */
+ 111:./usb/vcp/usbd_cdc_vcp.c **** //  USART_ITConfig(EVAL_COM1, USART_IT_RXNE, ENABLE);
+ 112:./usb/vcp/usbd_cdc_vcp.c **** //
+ 113:./usb/vcp/usbd_cdc_vcp.c **** //  /* Enable USART Interrupt */
+ 114:./usb/vcp/usbd_cdc_vcp.c **** //  NVIC_InitStructure.NVIC_IRQChannel = EVAL_COM1_IRQn;
+ 115:./usb/vcp/usbd_cdc_vcp.c **** //  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+ 116:./usb/vcp/usbd_cdc_vcp.c **** //  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+ 117:./usb/vcp/usbd_cdc_vcp.c **** //  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+ 118:./usb/vcp/usbd_cdc_vcp.c **** //  NVIC_Init(&NVIC_InitStructure);
+ 119:./usb/vcp/usbd_cdc_vcp.c ****   
+ 120:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 121:./usb/vcp/usbd_cdc_vcp.c **** }
+  40              		.loc 1 121 0
+  41 0012 7047     		bx	lr
+  42              	.L3:
+  43              		.align	2
+  44              	.L2:
+  45 0014 00000000 		.word	USART_InitStructure
+  46 0018 00060C00 		.word	787968
+  47              		.cfi_endproc
+  48              	.LFE110:
+  50              		.align	1
+  51              		.syntax unified
+  52              		.thumb
+  53              		.thumb_func
+  54              		.fpu fpv4-sp-d16
+  56              	VCP_DeInit:
+  57              	.LFB111:
+ 122:./usb/vcp/usbd_cdc_vcp.c **** 
+ 123:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 124:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_DeInit
+ 125:./usb/vcp/usbd_cdc_vcp.c ****   *         DeInitializes the Media on the STM32
+ 126:./usb/vcp/usbd_cdc_vcp.c ****   * @param  None
+ 127:./usb/vcp/usbd_cdc_vcp.c ****   * @retval Result of the opeartion (USBD_OK in all cases)
+ 128:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 129:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DeInit(void)
+ 130:./usb/vcp/usbd_cdc_vcp.c **** {
+  58              		.loc 1 130 0
+  59              		.cfi_startproc
+  60              		@ args = 0, pretend = 0, frame = 0
+  61              		@ frame_needed = 0, uses_anonymous_args = 0
+  62              		@ link register save eliminated.
+ 131:./usb/vcp/usbd_cdc_vcp.c **** 
+ 132:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 133:./usb/vcp/usbd_cdc_vcp.c **** }
+  63              		.loc 1 133 0
+  64 001c 0020     		movs	r0, #0
+  65 001e 7047     		bx	lr
+  66              		.cfi_endproc
+  67              	.LFE111:
+  69              		.align	1
+  70              		.syntax unified
+  71              		.thumb
+  72              		.thumb_func
+  73              		.fpu fpv4-sp-d16
+  75              	VCP_COMConfig:
+  76              	.LFB116:
+ 134:./usb/vcp/usbd_cdc_vcp.c **** 
+ 135:./usb/vcp/usbd_cdc_vcp.c **** 
+ 136:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 137:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_Ctrl
+ 138:./usb/vcp/usbd_cdc_vcp.c ****   *         Manage the CDC class requests
+ 139:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Cmd: Command code            
+ 140:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Buf: Buffer containing command data (request parameters)
+ 141:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Len: Number of data to be sent (in bytes)
+ 142:./usb/vcp/usbd_cdc_vcp.c ****   * @retval Result of the opeartion (USBD_OK in all cases)
+ 143:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 144:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_Ctrl (uint32_t Cmd, uint8_t* Buf, uint32_t Len)
+ 145:./usb/vcp/usbd_cdc_vcp.c **** { 
+ 146:./usb/vcp/usbd_cdc_vcp.c ****   switch (Cmd)
+ 147:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 148:./usb/vcp/usbd_cdc_vcp.c ****   case SEND_ENCAPSULATED_COMMAND:
+ 149:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 150:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 151:./usb/vcp/usbd_cdc_vcp.c **** 
+ 152:./usb/vcp/usbd_cdc_vcp.c ****   case GET_ENCAPSULATED_RESPONSE:
+ 153:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 154:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 155:./usb/vcp/usbd_cdc_vcp.c **** 
+ 156:./usb/vcp/usbd_cdc_vcp.c ****   case SET_COMM_FEATURE:
+ 157:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 158:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 159:./usb/vcp/usbd_cdc_vcp.c **** 
+ 160:./usb/vcp/usbd_cdc_vcp.c ****   case GET_COMM_FEATURE:
+ 161:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 162:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 163:./usb/vcp/usbd_cdc_vcp.c **** 
+ 164:./usb/vcp/usbd_cdc_vcp.c ****   case CLEAR_COMM_FEATURE:
+ 165:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 166:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 167:./usb/vcp/usbd_cdc_vcp.c **** 
+ 168:./usb/vcp/usbd_cdc_vcp.c ****   case SET_LINE_CODING:
+ 169:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.bitrate = (uint32_t)(Buf[0] | (Buf[1] << 8) | (Buf[2] << 16) | (Buf[3] << 24));
+ 170:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.format = Buf[4];
+ 171:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.paritytype = Buf[5];
+ 172:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.datatype = Buf[6];
+ 173:./usb/vcp/usbd_cdc_vcp.c ****     /* Set the new configuration */
+ 174:./usb/vcp/usbd_cdc_vcp.c ****     VCP_COMConfig(OTHER_CONFIG);
+ 175:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 176:./usb/vcp/usbd_cdc_vcp.c **** 
+ 177:./usb/vcp/usbd_cdc_vcp.c ****   case GET_LINE_CODING:
+ 178:./usb/vcp/usbd_cdc_vcp.c ****     Buf[0] = (uint8_t)(linecoding.bitrate);
+ 179:./usb/vcp/usbd_cdc_vcp.c ****     Buf[1] = (uint8_t)(linecoding.bitrate >> 8);
+ 180:./usb/vcp/usbd_cdc_vcp.c ****     Buf[2] = (uint8_t)(linecoding.bitrate >> 16);
+ 181:./usb/vcp/usbd_cdc_vcp.c ****     Buf[3] = (uint8_t)(linecoding.bitrate >> 24);
+ 182:./usb/vcp/usbd_cdc_vcp.c ****     Buf[4] = linecoding.format;
+ 183:./usb/vcp/usbd_cdc_vcp.c ****     Buf[5] = linecoding.paritytype;
+ 184:./usb/vcp/usbd_cdc_vcp.c ****     Buf[6] = linecoding.datatype; 
+ 185:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 186:./usb/vcp/usbd_cdc_vcp.c **** 
+ 187:./usb/vcp/usbd_cdc_vcp.c ****   case SET_CONTROL_LINE_STATE:
+ 188:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 189:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 190:./usb/vcp/usbd_cdc_vcp.c **** 
+ 191:./usb/vcp/usbd_cdc_vcp.c ****   case SEND_BREAK:
+ 192:./usb/vcp/usbd_cdc_vcp.c ****     /* Not  needed for this driver */
+ 193:./usb/vcp/usbd_cdc_vcp.c ****     break;    
+ 194:./usb/vcp/usbd_cdc_vcp.c ****     
+ 195:./usb/vcp/usbd_cdc_vcp.c ****   default:
+ 196:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 197:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 198:./usb/vcp/usbd_cdc_vcp.c **** 
+ 199:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 200:./usb/vcp/usbd_cdc_vcp.c **** }
+ 201:./usb/vcp/usbd_cdc_vcp.c **** 
+ 202:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 203:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_DataTx
+ 204:./usb/vcp/usbd_cdc_vcp.c ****   *         CDC received data to be send over USB IN endpoint are managed in 
+ 205:./usb/vcp/usbd_cdc_vcp.c ****   *         this function.
+ 206:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Buf: Buffer of data to be sent
+ 207:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Len: Number of data to be sent (in bytes)
+ 208:./usb/vcp/usbd_cdc_vcp.c ****   * @retval Result of the opeartion: USBD_OK if all operations are OK else VCP_FAIL
+ 209:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 210:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DataTx (uint8_t* Buf, uint32_t Len)
+ 211:./usb/vcp/usbd_cdc_vcp.c **** {
+ 212:./usb/vcp/usbd_cdc_vcp.c **** 	for(int i = 0; i < Len; i++)
+ 213:./usb/vcp/usbd_cdc_vcp.c **** 	{
+ 214:./usb/vcp/usbd_cdc_vcp.c **** 		VCP_ByteTx(Buf[i]);
+ 215:./usb/vcp/usbd_cdc_vcp.c **** 	}
+ 216:./usb/vcp/usbd_cdc_vcp.c **** //  if (linecoding.datatype == 7)
+ 217:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 218:./usb/vcp/usbd_cdc_vcp.c **** //    APP_Rx_Buffer[APP_Rx_ptr_in] = USART_ReceiveData(EVAL_COM1) & 0x7F;
+ 219:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 220:./usb/vcp/usbd_cdc_vcp.c **** //  else if (linecoding.datatype == 8)
+ 221:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 222:./usb/vcp/usbd_cdc_vcp.c **** //    APP_Rx_Buffer[APP_Rx_ptr_in] = USART_ReceiveData(EVAL_COM1);
+ 223:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 224:./usb/vcp/usbd_cdc_vcp.c **** //
+ 225:./usb/vcp/usbd_cdc_vcp.c **** //  APP_Rx_ptr_in++;
+ 226:./usb/vcp/usbd_cdc_vcp.c **** //
+ 227:./usb/vcp/usbd_cdc_vcp.c **** //  /* To avoid buffer overflow */
+ 228:./usb/vcp/usbd_cdc_vcp.c **** //  if(APP_Rx_ptr_in == APP_RX_DATA_SIZE)
+ 229:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 230:./usb/vcp/usbd_cdc_vcp.c **** //    APP_Rx_ptr_in = 0;
+ 231:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 232:./usb/vcp/usbd_cdc_vcp.c ****   
+ 233:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 234:./usb/vcp/usbd_cdc_vcp.c **** }
+ 235:./usb/vcp/usbd_cdc_vcp.c **** 
+ 236:./usb/vcp/usbd_cdc_vcp.c **** uint16_t VCP_ByteTx (uint8_t dataByte)
+ 237:./usb/vcp/usbd_cdc_vcp.c **** {
+ 238:./usb/vcp/usbd_cdc_vcp.c ****   APP_Rx_Buffer[APP_Rx_ptr_in] = dataByte;
+ 239:./usb/vcp/usbd_cdc_vcp.c ****   APP_Rx_ptr_in++;
+ 240:./usb/vcp/usbd_cdc_vcp.c **** 
+ 241:./usb/vcp/usbd_cdc_vcp.c ****   /* To avoid buffer overflow */
+ 242:./usb/vcp/usbd_cdc_vcp.c ****   if(APP_Rx_ptr_in == APP_RX_DATA_SIZE)
+ 243:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 244:./usb/vcp/usbd_cdc_vcp.c ****     APP_Rx_ptr_in = 0;
+ 245:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 246:./usb/vcp/usbd_cdc_vcp.c **** 
+ 247:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 248:./usb/vcp/usbd_cdc_vcp.c **** }
+ 249:./usb/vcp/usbd_cdc_vcp.c **** 
+ 250:./usb/vcp/usbd_cdc_vcp.c **** 
+ 251:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 252:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_DataRx
+ 253:./usb/vcp/usbd_cdc_vcp.c ****   *         Data received over USB OUT endpoint are sent over CDC interface 
+ 254:./usb/vcp/usbd_cdc_vcp.c ****   *         through this function.
+ 255:./usb/vcp/usbd_cdc_vcp.c ****   *           
+ 256:./usb/vcp/usbd_cdc_vcp.c ****   *         @note
+ 257:./usb/vcp/usbd_cdc_vcp.c ****   *         This function will block any OUT packet reception on USB endpoint 
+ 258:./usb/vcp/usbd_cdc_vcp.c ****   *         untill exiting this function. If you exit this function before transfer
+ 259:./usb/vcp/usbd_cdc_vcp.c ****   *         is complete on CDC interface (ie. using DMA controller) it will result 
+ 260:./usb/vcp/usbd_cdc_vcp.c ****   *         in receiving more data while previous ones are still not sent.
+ 261:./usb/vcp/usbd_cdc_vcp.c ****   *                 
+ 262:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Buf: Buffer of data to be received
+ 263:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Len: Number of data received (in bytes)
+ 264:./usb/vcp/usbd_cdc_vcp.c ****   * @retval Result of the opeartion: USBD_OK if all operations are OK else VCP_FAIL
+ 265:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 266:./usb/vcp/usbd_cdc_vcp.c **** 
+ 267:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_DataRx (uint8_t* Buf, uint32_t Len)
+ 268:./usb/vcp/usbd_cdc_vcp.c **** {
+ 269:./usb/vcp/usbd_cdc_vcp.c ****   char text[40];
+ 270:./usb/vcp/usbd_cdc_vcp.c **** //  for (i = 0; i < Len; i++)
+ 271:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 272:./usb/vcp/usbd_cdc_vcp.c **** //    USART_SendData(EVAL_COM1, *(Buf + i) );
+ 273:./usb/vcp/usbd_cdc_vcp.c **** //    while(USART_GetFlagStatus(EVAL_COM1, USART_FLAG_TXE) == RESET);
+ 274:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 275:./usb/vcp/usbd_cdc_vcp.c ****   if(Len == 1)
+ 276:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 277:./usb/vcp/usbd_cdc_vcp.c **** 	  //sprintf(text, "%x     ", Buf[0]);
+ 278:./usb/vcp/usbd_cdc_vcp.c **** 	  //GUI_Text(0, 0, (uint8_t*)text, Green, Black);
+ 279:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 280:./usb/vcp/usbd_cdc_vcp.c ****   else
+ 281:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 282:./usb/vcp/usbd_cdc_vcp.c **** 	  //sprintf(text, "%d:%x  ", Len, Buf[0]);
+ 283:./usb/vcp/usbd_cdc_vcp.c **** 	  //GUI_Text(0, 0, (uint8_t*)text, Green, Black);
+ 284:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 285:./usb/vcp/usbd_cdc_vcp.c **** 
+ 286:./usb/vcp/usbd_cdc_vcp.c ****   SumpProcessRequest(Buf, Len);
+ 287:./usb/vcp/usbd_cdc_vcp.c ****  
+ 288:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 289:./usb/vcp/usbd_cdc_vcp.c **** }
+ 290:./usb/vcp/usbd_cdc_vcp.c **** 
+ 291:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 292:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  VCP_COMConfig
+ 293:./usb/vcp/usbd_cdc_vcp.c ****   *         Configure the COM Port with default values or values received from host.
+ 294:./usb/vcp/usbd_cdc_vcp.c ****   * @param  Conf: can be DEFAULT_CONFIG to set the default configuration or OTHER_CONFIG
+ 295:./usb/vcp/usbd_cdc_vcp.c ****   *         to set a configuration received from the host.
+ 296:./usb/vcp/usbd_cdc_vcp.c ****   * @retval None.
+ 297:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 298:./usb/vcp/usbd_cdc_vcp.c **** static uint16_t VCP_COMConfig(uint8_t Conf)
+ 299:./usb/vcp/usbd_cdc_vcp.c **** {
+  77              		.loc 1 299 0
+  78              		.cfi_startproc
+  79              		@ args = 0, pretend = 0, frame = 0
+  80              		@ frame_needed = 0, uses_anonymous_args = 0
+  81              	.LVL0:
+  82 0020 08B5     		push	{r3, lr}
+  83              	.LCFI0:
+  84              		.cfi_def_cfa_offset 8
+  85              		.cfi_offset 3, -8
+  86              		.cfi_offset 14, -4
+ 300:./usb/vcp/usbd_cdc_vcp.c ****   if (Conf == DEFAULT_CONFIG)  
+  87              		.loc 1 300 0
+  88 0022 40B9     		cbnz	r0, .L6
+ 301:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 302:./usb/vcp/usbd_cdc_vcp.c ****     /* EVAL_COM1 default configuration */
+ 303:./usb/vcp/usbd_cdc_vcp.c ****     /* EVAL_COM1 configured as follow:
+ 304:./usb/vcp/usbd_cdc_vcp.c ****     - BaudRate = 115200 baud  
+ 305:./usb/vcp/usbd_cdc_vcp.c ****     - Word Length = 8 Bits
+ 306:./usb/vcp/usbd_cdc_vcp.c ****     - One Stop Bit
+ 307:./usb/vcp/usbd_cdc_vcp.c ****     - Parity Odd
+ 308:./usb/vcp/usbd_cdc_vcp.c ****     - Hardware flow control disabled
+ 309:./usb/vcp/usbd_cdc_vcp.c ****     - Receive and transmit enabled
+ 310:./usb/vcp/usbd_cdc_vcp.c ****     */
+ 311:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_BaudRate = 115200;
+  89              		.loc 1 311 0
+  90 0024 234B     		ldr	r3, .L24
+  91 0026 4FF4E132 		mov	r2, #115200
+  92 002a C3E90020 		strd	r2, r0, [r3]
+ 312:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 313:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  93              		.loc 1 313 0
+  94 002e 224A     		ldr	r2, .L24+4
+  95 0030 9A60     		str	r2, [r3, #8]
+ 314:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_Parity = USART_Parity_Odd;
+ 315:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 316:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  96              		.loc 1 316 0
+  97 0032 9881     		strh	r0, [r3, #12]	@ movhi
+  98              	.LVL1:
+  99              	.L7:
+ 317:./usb/vcp/usbd_cdc_vcp.c ****     
+ 318:./usb/vcp/usbd_cdc_vcp.c **** //    /* Configure and enable the USART */
+ 319:./usb/vcp/usbd_cdc_vcp.c **** //    STM_EVAL_COMInit(COM1, &USART_InitStructure);
+ 320:./usb/vcp/usbd_cdc_vcp.c **** //
+ 321:./usb/vcp/usbd_cdc_vcp.c **** //    /* Enable the USART Receive interrupt */
+ 322:./usb/vcp/usbd_cdc_vcp.c **** //    USART_ITConfig(EVAL_COM1, USART_IT_RXNE, ENABLE);
+ 323:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 324:./usb/vcp/usbd_cdc_vcp.c ****   else
+ 325:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 326:./usb/vcp/usbd_cdc_vcp.c ****     /* set the Stop bit*/
+ 327:./usb/vcp/usbd_cdc_vcp.c ****     switch (linecoding.format)
+ 328:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 329:./usb/vcp/usbd_cdc_vcp.c ****     case 0:
+ 330:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_StopBits = USART_StopBits_1;
+ 331:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 332:./usb/vcp/usbd_cdc_vcp.c ****     case 1:
+ 333:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_StopBits = USART_StopBits_1_5;
+ 334:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 335:./usb/vcp/usbd_cdc_vcp.c ****     case 2:
+ 336:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_StopBits = USART_StopBits_2;
+ 337:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 338:./usb/vcp/usbd_cdc_vcp.c ****     default :
+ 339:./usb/vcp/usbd_cdc_vcp.c ****       VCP_COMConfig(DEFAULT_CONFIG);
+ 340:./usb/vcp/usbd_cdc_vcp.c ****       return (USBD_FAIL);
+ 341:./usb/vcp/usbd_cdc_vcp.c ****     }
+ 342:./usb/vcp/usbd_cdc_vcp.c ****     
+ 343:./usb/vcp/usbd_cdc_vcp.c ****     /* set the parity bit*/
+ 344:./usb/vcp/usbd_cdc_vcp.c ****     switch (linecoding.paritytype)
+ 345:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 346:./usb/vcp/usbd_cdc_vcp.c ****     case 0:
+ 347:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_Parity = USART_Parity_No;
+ 348:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 349:./usb/vcp/usbd_cdc_vcp.c ****     case 1:
+ 350:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_Parity = USART_Parity_Even;
+ 351:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 352:./usb/vcp/usbd_cdc_vcp.c ****     case 2:
+ 353:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_Parity = USART_Parity_Odd;
+ 354:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 355:./usb/vcp/usbd_cdc_vcp.c ****     default :
+ 356:./usb/vcp/usbd_cdc_vcp.c ****       VCP_COMConfig(DEFAULT_CONFIG);
+ 357:./usb/vcp/usbd_cdc_vcp.c ****       return (USBD_FAIL);
+ 358:./usb/vcp/usbd_cdc_vcp.c ****     }
+ 359:./usb/vcp/usbd_cdc_vcp.c ****     
+ 360:./usb/vcp/usbd_cdc_vcp.c ****     /*set the data type : only 8bits and 9bits is supported */
+ 361:./usb/vcp/usbd_cdc_vcp.c ****     switch (linecoding.datatype)
+ 362:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 363:./usb/vcp/usbd_cdc_vcp.c ****     case 0x07:
+ 364:./usb/vcp/usbd_cdc_vcp.c ****       /* With this configuration a parity (Even or Odd) should be set */
+ 365:./usb/vcp/usbd_cdc_vcp.c ****       USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 366:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 367:./usb/vcp/usbd_cdc_vcp.c ****     case 0x08:
+ 368:./usb/vcp/usbd_cdc_vcp.c ****       if (USART_InitStructure.USART_Parity == USART_Parity_No)
+ 369:./usb/vcp/usbd_cdc_vcp.c ****       {
+ 370:./usb/vcp/usbd_cdc_vcp.c ****         USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 371:./usb/vcp/usbd_cdc_vcp.c ****       }
+ 372:./usb/vcp/usbd_cdc_vcp.c ****       else 
+ 373:./usb/vcp/usbd_cdc_vcp.c ****       {
+ 374:./usb/vcp/usbd_cdc_vcp.c ****         USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+ 375:./usb/vcp/usbd_cdc_vcp.c ****       }
+ 376:./usb/vcp/usbd_cdc_vcp.c ****       
+ 377:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 378:./usb/vcp/usbd_cdc_vcp.c ****     default :
+ 379:./usb/vcp/usbd_cdc_vcp.c ****       VCP_COMConfig(DEFAULT_CONFIG);
+ 380:./usb/vcp/usbd_cdc_vcp.c ****       return (USBD_FAIL);
+ 381:./usb/vcp/usbd_cdc_vcp.c ****     }
+ 382:./usb/vcp/usbd_cdc_vcp.c ****     
+ 383:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_BaudRate = linecoding.bitrate;
+ 384:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 385:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 386:./usb/vcp/usbd_cdc_vcp.c ****     
+ 387:./usb/vcp/usbd_cdc_vcp.c ****     /* Configure and enable the USART */
+ 388:./usb/vcp/usbd_cdc_vcp.c ****     //STM_EVAL_COMInit(COM1, &USART_InitStructure);
+ 389:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 390:./usb/vcp/usbd_cdc_vcp.c ****   return USBD_OK;
+ 391:./usb/vcp/usbd_cdc_vcp.c **** }
+ 100              		.loc 1 391 0
+ 101 0034 08BD     		pop	{r3, pc}
+ 102              	.LVL2:
+ 103              	.L6:
+ 327:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 104              		.loc 1 327 0
+ 105 0036 214B     		ldr	r3, .L24+8
+ 106 0038 1A79     		ldrb	r2, [r3, #4]	@ zero_extendqisi2
+ 107 003a 012A     		cmp	r2, #1
+ 108 003c 14D0     		beq	.L9
+ 109 003e 06D3     		bcc	.L10
+ 110 0040 022A     		cmp	r2, #2
+ 111 0042 15D0     		beq	.L11
+ 112              	.L8:
+ 339:./usb/vcp/usbd_cdc_vcp.c ****       return (USBD_FAIL);
+ 113              		.loc 1 339 0
+ 114 0044 0020     		movs	r0, #0
+ 115              	.LVL3:
+ 116 0046 FFF7EBFF 		bl	VCP_COMConfig
+ 117              	.LVL4:
+ 340:./usb/vcp/usbd_cdc_vcp.c ****     }
+ 118              		.loc 1 340 0
+ 119 004a 0220     		movs	r0, #2
+ 120 004c F2E7     		b	.L7
+ 121              	.LVL5:
+ 122              	.L10:
+ 330:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 123              		.loc 1 330 0
+ 124 004e 194A     		ldr	r2, .L24
+ 125 0050 0021     		movs	r1, #0
+ 126              	.L21:
+ 336:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 127              		.loc 1 336 0
+ 128 0052 D180     		strh	r1, [r2, #6]	@ movhi
+ 344:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 129              		.loc 1 344 0
+ 130 0054 5A79     		ldrb	r2, [r3, #5]	@ zero_extendqisi2
+ 131 0056 012A     		cmp	r2, #1
+ 132 0058 1CD0     		beq	.L13
+ 133 005a 0DD3     		bcc	.L14
+ 134 005c 022A     		cmp	r2, #2
+ 135 005e F1D1     		bne	.L8
+ 353:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 136              		.loc 1 353 0
+ 137 0060 144A     		ldr	r2, .L24
+ 138 0062 4FF4C061 		mov	r1, #1536
+ 139 0066 09E0     		b	.L22
+ 140              	.L9:
+ 333:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 141              		.loc 1 333 0
+ 142 0068 124A     		ldr	r2, .L24
+ 143 006a 4FF44051 		mov	r1, #12288
+ 144 006e F0E7     		b	.L21
+ 145              	.L11:
+ 336:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 146              		.loc 1 336 0
+ 147 0070 104A     		ldr	r2, .L24
+ 148 0072 4FF40051 		mov	r1, #8192
+ 149 0076 ECE7     		b	.L21
+ 150              	.L14:
+ 347:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 151              		.loc 1 347 0
+ 152 0078 0E4A     		ldr	r2, .L24
+ 153 007a 0021     		movs	r1, #0
+ 154              	.L22:
+ 353:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 155              		.loc 1 353 0
+ 156 007c 1181     		strh	r1, [r2, #8]	@ movhi
+ 361:./usb/vcp/usbd_cdc_vcp.c ****     {
+ 157              		.loc 1 361 0
+ 158 007e 9A79     		ldrb	r2, [r3, #6]	@ zero_extendqisi2
+ 159 0080 072A     		cmp	r2, #7
+ 160 0082 0BD0     		beq	.L17
+ 161 0084 082A     		cmp	r2, #8
+ 162 0086 DDD1     		bne	.L8
+ 368:./usb/vcp/usbd_cdc_vcp.c ****       {
+ 163              		.loc 1 368 0
+ 164 0088 0A4A     		ldr	r2, .L24
+ 165 008a 1189     		ldrh	r1, [r2, #8]
+ 166 008c 41B1     		cbz	r1, .L23
+ 374:./usb/vcp/usbd_cdc_vcp.c ****       }
+ 167              		.loc 1 374 0
+ 168 008e 4FF48051 		mov	r1, #4096
+ 169 0092 05E0     		b	.L23
+ 170              	.L13:
+ 350:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 171              		.loc 1 350 0
+ 172 0094 074A     		ldr	r2, .L24
+ 173 0096 4FF48061 		mov	r1, #1024
+ 174 009a EFE7     		b	.L22
+ 175              	.L17:
+ 365:./usb/vcp/usbd_cdc_vcp.c ****       break;
+ 176              		.loc 1 365 0
+ 177 009c 054A     		ldr	r2, .L24
+ 178 009e 0021     		movs	r1, #0
+ 179              	.L23:
+ 374:./usb/vcp/usbd_cdc_vcp.c ****       }
+ 180              		.loc 1 374 0
+ 181 00a0 9180     		strh	r1, [r2, #4]	@ movhi
+ 383:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+ 182              		.loc 1 383 0
+ 183 00a2 044A     		ldr	r2, .L24
+ 184 00a4 1B68     		ldr	r3, [r3]
+ 185 00a6 1360     		str	r3, [r2]
+ 384:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 186              		.loc 1 384 0
+ 187 00a8 0020     		movs	r0, #0
+ 188              	.LVL6:
+ 385:./usb/vcp/usbd_cdc_vcp.c ****     
+ 189              		.loc 1 385 0
+ 190 00aa 0C23     		movs	r3, #12
+ 384:./usb/vcp/usbd_cdc_vcp.c ****     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+ 191              		.loc 1 384 0
+ 192 00ac 9081     		strh	r0, [r2, #12]	@ movhi
+ 385:./usb/vcp/usbd_cdc_vcp.c ****     
+ 193              		.loc 1 385 0
+ 194 00ae 5381     		strh	r3, [r2, #10]	@ movhi
+ 195 00b0 C0E7     		b	.L7
+ 196              	.L25:
+ 197 00b2 00BF     		.align	2
+ 198              	.L24:
+ 199 00b4 00000000 		.word	USART_InitStructure
+ 200 00b8 00060C00 		.word	787968
+ 201 00bc 00000000 		.word	.LANCHOR0
+ 202              		.cfi_endproc
+ 203              	.LFE116:
+ 205              		.align	1
+ 206              		.syntax unified
+ 207              		.thumb
+ 208              		.thumb_func
+ 209              		.fpu fpv4-sp-d16
+ 211              	VCP_DataRx:
+ 212              	.LFB115:
+ 268:./usb/vcp/usbd_cdc_vcp.c ****   char text[40];
+ 213              		.loc 1 268 0
+ 214              		.cfi_startproc
+ 215              		@ args = 0, pretend = 0, frame = 0
+ 216              		@ frame_needed = 0, uses_anonymous_args = 0
+ 217              	.LVL7:
+ 218 00c0 08B5     		push	{r3, lr}
+ 219              	.LCFI1:
+ 220              		.cfi_def_cfa_offset 8
+ 221              		.cfi_offset 3, -8
+ 222              		.cfi_offset 14, -4
+ 286:./usb/vcp/usbd_cdc_vcp.c ****  
+ 223              		.loc 1 286 0
+ 224 00c2 FFF7FEFF 		bl	SumpProcessRequest
+ 225              	.LVL8:
+ 289:./usb/vcp/usbd_cdc_vcp.c **** 
+ 226              		.loc 1 289 0
+ 227 00c6 0020     		movs	r0, #0
+ 228 00c8 08BD     		pop	{r3, pc}
+ 229              		.cfi_endproc
+ 230              	.LFE115:
+ 232              		.align	1
+ 233              		.syntax unified
+ 234              		.thumb
+ 235              		.thumb_func
+ 236              		.fpu fpv4-sp-d16
+ 238              	VCP_Ctrl:
+ 239              	.LFB112:
+ 145:./usb/vcp/usbd_cdc_vcp.c ****   switch (Cmd)
+ 240              		.loc 1 145 0
+ 241              		.cfi_startproc
+ 242              		@ args = 0, pretend = 0, frame = 0
+ 243              		@ frame_needed = 0, uses_anonymous_args = 0
+ 244              	.LVL9:
+ 146:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 245              		.loc 1 146 0
+ 246 00ca 2028     		cmp	r0, #32
+ 145:./usb/vcp/usbd_cdc_vcp.c ****   switch (Cmd)
+ 247              		.loc 1 145 0
+ 248 00cc 08B5     		push	{r3, lr}
+ 249              	.LCFI2:
+ 250              		.cfi_def_cfa_offset 8
+ 251              		.cfi_offset 3, -8
+ 252              		.cfi_offset 14, -4
+ 146:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 253              		.loc 1 146 0
+ 254 00ce 03D0     		beq	.L29
+ 255 00d0 2128     		cmp	r0, #33
+ 256 00d2 0ED0     		beq	.L30
+ 257              	.LVL10:
+ 258              	.L28:
+ 200:./usb/vcp/usbd_cdc_vcp.c **** 
+ 259              		.loc 1 200 0
+ 260 00d4 0020     		movs	r0, #0
+ 261 00d6 08BD     		pop	{r3, pc}
+ 262              	.LVL11:
+ 263              	.L29:
+ 264              	.LBB4:
+ 265              	.LBB5:
+ 169:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.format = Buf[4];
+ 266              		.loc 1 169 0
+ 267 00d8 0E4B     		ldr	r3, .L31
+ 268 00da 0A68     		ldr	r2, [r1]	@ unaligned
+ 269              	.LVL12:
+ 270 00dc 1A60     		str	r2, [r3]
+ 170:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.paritytype = Buf[5];
+ 271              		.loc 1 170 0
+ 272 00de 0A79     		ldrb	r2, [r1, #4]	@ zero_extendqisi2
+ 273 00e0 1A71     		strb	r2, [r3, #4]
+ 171:./usb/vcp/usbd_cdc_vcp.c ****     linecoding.datatype = Buf[6];
+ 274              		.loc 1 171 0
+ 275 00e2 4A79     		ldrb	r2, [r1, #5]	@ zero_extendqisi2
+ 276 00e4 5A71     		strb	r2, [r3, #5]
+ 174:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 277              		.loc 1 174 0
+ 278 00e6 0120     		movs	r0, #1
+ 279              	.LVL13:
+ 172:./usb/vcp/usbd_cdc_vcp.c ****     /* Set the new configuration */
+ 280              		.loc 1 172 0
+ 281 00e8 8A79     		ldrb	r2, [r1, #6]	@ zero_extendqisi2
+ 282 00ea 9A71     		strb	r2, [r3, #6]
+ 174:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 283              		.loc 1 174 0
+ 284 00ec FFF798FF 		bl	VCP_COMConfig
+ 285              	.LVL14:
+ 286 00f0 F0E7     		b	.L28
+ 287              	.LVL15:
+ 288              	.L30:
+ 289              	.LBE5:
+ 290              	.LBE4:
+ 178:./usb/vcp/usbd_cdc_vcp.c ****     Buf[1] = (uint8_t)(linecoding.bitrate >> 8);
+ 291              		.loc 1 178 0
+ 292 00f2 084B     		ldr	r3, .L31
+ 293 00f4 1A68     		ldr	r2, [r3]
+ 294              	.LVL16:
+ 295 00f6 0A70     		strb	r2, [r1]
+ 179:./usb/vcp/usbd_cdc_vcp.c ****     Buf[2] = (uint8_t)(linecoding.bitrate >> 16);
+ 296              		.loc 1 179 0
+ 297 00f8 1A68     		ldr	r2, [r3]
+ 298 00fa 120A     		lsrs	r2, r2, #8
+ 299 00fc 4A70     		strb	r2, [r1, #1]
+ 180:./usb/vcp/usbd_cdc_vcp.c ****     Buf[3] = (uint8_t)(linecoding.bitrate >> 24);
+ 300              		.loc 1 180 0
+ 301 00fe 5A88     		ldrh	r2, [r3, #2]
+ 302 0100 8A70     		strb	r2, [r1, #2]
+ 181:./usb/vcp/usbd_cdc_vcp.c ****     Buf[4] = linecoding.format;
+ 303              		.loc 1 181 0
+ 304 0102 DA78     		ldrb	r2, [r3, #3]	@ zero_extendqisi2
+ 305 0104 CA70     		strb	r2, [r1, #3]
+ 182:./usb/vcp/usbd_cdc_vcp.c ****     Buf[5] = linecoding.paritytype;
+ 306              		.loc 1 182 0
+ 307 0106 1A79     		ldrb	r2, [r3, #4]	@ zero_extendqisi2
+ 308 0108 0A71     		strb	r2, [r1, #4]
+ 183:./usb/vcp/usbd_cdc_vcp.c ****     Buf[6] = linecoding.datatype; 
+ 309              		.loc 1 183 0
+ 310 010a 5A79     		ldrb	r2, [r3, #5]	@ zero_extendqisi2
+ 311 010c 4A71     		strb	r2, [r1, #5]
+ 184:./usb/vcp/usbd_cdc_vcp.c ****     break;
+ 312              		.loc 1 184 0
+ 313 010e 9B79     		ldrb	r3, [r3, #6]	@ zero_extendqisi2
+ 314 0110 8B71     		strb	r3, [r1, #6]
+ 185:./usb/vcp/usbd_cdc_vcp.c **** 
+ 315              		.loc 1 185 0
+ 316 0112 DFE7     		b	.L28
+ 317              	.L32:
+ 318              		.align	2
+ 319              	.L31:
+ 320 0114 00000000 		.word	.LANCHOR0
+ 321              		.cfi_endproc
+ 322              	.LFE112:
+ 324              		.align	1
+ 325              		.global	VCP_ByteTx
+ 326              		.syntax unified
+ 327              		.thumb
+ 328              		.thumb_func
+ 329              		.fpu fpv4-sp-d16
+ 331              	VCP_ByteTx:
+ 332              	.LFB114:
+ 237:./usb/vcp/usbd_cdc_vcp.c ****   APP_Rx_Buffer[APP_Rx_ptr_in] = dataByte;
+ 333              		.loc 1 237 0
+ 334              		.cfi_startproc
+ 335              		@ args = 0, pretend = 0, frame = 0
+ 336              		@ frame_needed = 0, uses_anonymous_args = 0
+ 337              		@ link register save eliminated.
+ 338              	.LVL17:
+ 238:./usb/vcp/usbd_cdc_vcp.c ****   APP_Rx_ptr_in++;
+ 339              		.loc 1 238 0
+ 340 0118 054A     		ldr	r2, .L37
+ 341 011a 0649     		ldr	r1, .L37+4
+ 342 011c 1368     		ldr	r3, [r2]
+ 343 011e C854     		strb	r0, [r1, r3]
+ 239:./usb/vcp/usbd_cdc_vcp.c **** 
+ 344              		.loc 1 239 0
+ 345 0120 0133     		adds	r3, r3, #1
+ 242:./usb/vcp/usbd_cdc_vcp.c ****   {
+ 346              		.loc 1 242 0
+ 347 0122 B3F5004F 		cmp	r3, #32768
+ 244:./usb/vcp/usbd_cdc_vcp.c ****   }
+ 348              		.loc 1 244 0
+ 349 0126 08BF     		it	eq
+ 350 0128 0023     		moveq	r3, #0
+ 351 012a 1360     		str	r3, [r2]
+ 248:./usb/vcp/usbd_cdc_vcp.c **** 
+ 352              		.loc 1 248 0
+ 353 012c 0020     		movs	r0, #0
+ 354              	.LVL18:
+ 355 012e 7047     		bx	lr
+ 356              	.L38:
+ 357              		.align	2
+ 358              	.L37:
+ 359 0130 00000000 		.word	APP_Rx_ptr_in
+ 360 0134 00000000 		.word	APP_Rx_Buffer
+ 361              		.cfi_endproc
+ 362              	.LFE114:
+ 364              		.align	1
+ 365              		.syntax unified
+ 366              		.thumb
+ 367              		.thumb_func
+ 368              		.fpu fpv4-sp-d16
+ 370              	VCP_DataTx:
+ 371              	.LFB113:
+ 211:./usb/vcp/usbd_cdc_vcp.c **** 	for(int i = 0; i < Len; i++)
+ 372              		.loc 1 211 0
+ 373              		.cfi_startproc
+ 374              		@ args = 0, pretend = 0, frame = 0
+ 375              		@ frame_needed = 0, uses_anonymous_args = 0
+ 376              	.LVL19:
+ 377 0138 38B5     		push	{r3, r4, r5, lr}
+ 378              	.LCFI3:
+ 379              		.cfi_def_cfa_offset 16
+ 380              		.cfi_offset 3, -16
+ 381              		.cfi_offset 4, -12
+ 382              		.cfi_offset 5, -8
+ 383              		.cfi_offset 14, -4
+ 384 013a 0446     		mov	r4, r0
+ 385 013c 4518     		adds	r5, r0, r1
+ 386              	.LVL20:
+ 387              	.L40:
+ 388              	.LBB6:
+ 212:./usb/vcp/usbd_cdc_vcp.c **** 	{
+ 389              		.loc 1 212 0 discriminator 1
+ 390 013e AC42     		cmp	r4, r5
+ 391 0140 01D1     		bne	.L41
+ 392              	.LBE6:
+ 234:./usb/vcp/usbd_cdc_vcp.c **** 
+ 393              		.loc 1 234 0
+ 394 0142 0020     		movs	r0, #0
+ 395 0144 38BD     		pop	{r3, r4, r5, pc}
+ 396              	.LVL21:
+ 397              	.L41:
+ 398              	.LBB7:
+ 214:./usb/vcp/usbd_cdc_vcp.c **** 	}
+ 399              		.loc 1 214 0 discriminator 3
+ 400 0146 14F8010B 		ldrb	r0, [r4], #1	@ zero_extendqisi2
+ 401              	.LVL22:
+ 402 014a FFF7FEFF 		bl	VCP_ByteTx
+ 403              	.LVL23:
+ 404 014e F6E7     		b	.L40
+ 405              	.LBE7:
+ 406              		.cfi_endproc
+ 407              	.LFE113:
+ 409              		.align	1
+ 410              		.global	USART3_IRQHandler
+ 411              		.syntax unified
+ 412              		.thumb
+ 413              		.thumb_func
+ 414              		.fpu fpv4-sp-d16
+ 416              	USART3_IRQHandler:
+ 417              	.LFB117:
+ 392:./usb/vcp/usbd_cdc_vcp.c **** 
+ 393:./usb/vcp/usbd_cdc_vcp.c **** /**
+ 394:./usb/vcp/usbd_cdc_vcp.c ****   * @brief  EVAL_COM_IRQHandler
+ 395:./usb/vcp/usbd_cdc_vcp.c ****   *         
+ 396:./usb/vcp/usbd_cdc_vcp.c ****   * @param  None.
+ 397:./usb/vcp/usbd_cdc_vcp.c ****   * @retval None.
+ 398:./usb/vcp/usbd_cdc_vcp.c ****   */
+ 399:./usb/vcp/usbd_cdc_vcp.c **** void EVAL_COM_IRQHandler(void)
+ 400:./usb/vcp/usbd_cdc_vcp.c **** {
+ 418              		.loc 1 400 0
+ 419              		.cfi_startproc
+ 420              		@ args = 0, pretend = 0, frame = 0
+ 421              		@ frame_needed = 0, uses_anonymous_args = 0
+ 422              		@ link register save eliminated.
+ 401:./usb/vcp/usbd_cdc_vcp.c **** //  if (USART_GetITStatus(EVAL_COM1, USART_IT_RXNE) != RESET)
+ 402:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 403:./usb/vcp/usbd_cdc_vcp.c **** //    /* Send the received data to the PC Host*/
+ 404:./usb/vcp/usbd_cdc_vcp.c **** //    VCP_DataTx (0,0);
+ 405:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 406:./usb/vcp/usbd_cdc_vcp.c **** //
+ 407:./usb/vcp/usbd_cdc_vcp.c **** //  /* If overrun condition occurs, clear the ORE flag and recover communication */
+ 408:./usb/vcp/usbd_cdc_vcp.c **** //  if (USART_GetFlagStatus(EVAL_COM1, USART_FLAG_ORE) != RESET)
+ 409:./usb/vcp/usbd_cdc_vcp.c **** //  {
+ 410:./usb/vcp/usbd_cdc_vcp.c **** //    (void)USART_ReceiveData(EVAL_COM1);
+ 411:./usb/vcp/usbd_cdc_vcp.c **** //  }
+ 412:./usb/vcp/usbd_cdc_vcp.c **** }
+ 423              		.loc 1 412 0
+ 424 0150 7047     		bx	lr
+ 425              		.cfi_endproc
+ 426              	.LFE117:
+ 428              		.global	VCP_fops
+ 429              		.comm	USART_InitStructure,16,4
+ 430              		.global	linecoding
+ 431              		.data
+ 432              		.align	2
+ 433              		.set	.LANCHOR0,. + 0
+ 436              	linecoding:
+ 437 0000 00C20100 		.word	115200
+ 438 0004 00       		.byte	0
+ 439 0005 00       		.byte	0
+ 440 0006 08       		.byte	8
+ 441 0007 00       		.space	1
+ 444              	VCP_fops:
+ 445 0008 00000000 		.word	VCP_Init
+ 446 000c 00000000 		.word	VCP_DeInit
+ 447 0010 00000000 		.word	VCP_Ctrl
+ 448 0014 00000000 		.word	VCP_DataTx
+ 449 0018 00000000 		.word	VCP_DataRx
+ 450              		.text
+ 451              	.Letext0:
+ 452              		.file 2 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 453              		.file 3 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 454              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 455              		.file 5 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 456              		.file 6 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 457              		.file 7 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/st
+ 458              		.file 8 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/mi
+ 459              		.file 9 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_core.h
+ 460              		.file 10 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_Device_Library/Core/inc/
+ 461              		.file 11 "./usb/vcp/usbd_cdc_core.h"
+ 462              		.file 12 "./usb/vcp/usbd_cdc_vcp.h"
+ 463              		.file 13 "./la/sump.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 usbd_cdc_vcp.c
+     /tmp/ccas5fkp.s:16     .text:0000000000000000 $t
+     /tmp/ccas5fkp.s:22     .text:0000000000000000 VCP_Init
+     /tmp/ccas5fkp.s:45     .text:0000000000000014 $d
+                            *COM*:0000000000000010 USART_InitStructure
+     /tmp/ccas5fkp.s:50     .text:000000000000001c $t
+     /tmp/ccas5fkp.s:56     .text:000000000000001c VCP_DeInit
+     /tmp/ccas5fkp.s:75     .text:0000000000000020 VCP_COMConfig
+     /tmp/ccas5fkp.s:199    .text:00000000000000b4 $d
+     /tmp/ccas5fkp.s:205    .text:00000000000000c0 $t
+     /tmp/ccas5fkp.s:211    .text:00000000000000c0 VCP_DataRx
+     /tmp/ccas5fkp.s:238    .text:00000000000000ca VCP_Ctrl
+     /tmp/ccas5fkp.s:320    .text:0000000000000114 $d
+     /tmp/ccas5fkp.s:324    .text:0000000000000118 $t
+     /tmp/ccas5fkp.s:331    .text:0000000000000118 VCP_ByteTx
+     /tmp/ccas5fkp.s:359    .text:0000000000000130 $d
+     /tmp/ccas5fkp.s:364    .text:0000000000000138 $t
+     /tmp/ccas5fkp.s:370    .text:0000000000000138 VCP_DataTx
+     /tmp/ccas5fkp.s:416    .text:0000000000000150 USART3_IRQHandler
+     /tmp/ccas5fkp.s:444    .data:0000000000000008 VCP_fops
+     /tmp/ccas5fkp.s:436    .data:0000000000000000 linecoding
+     /tmp/ccas5fkp.s:432    .data:0000000000000000 $d
+
+UNDEFINED SYMBOLS
+SumpProcessRequest
+APP_Rx_ptr_in
+APP_Rx_Buffer

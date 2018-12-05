@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/3/trunk/LogicDiscovery/platform/stm32f4
+END
+startup.S
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/3/trunk/LogicDiscovery/platform/stm32f4/startup.S
+END
+system.c
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/3/trunk/LogicDiscovery/platform/stm32f4/system.c
+END

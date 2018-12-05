@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/7/trunk/LogicDiscovery/usb/vcp
+END
+usbd_desc.c
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_desc.c
+END
+usbd_cdc_core.c
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/7/trunk/LogicDiscovery/usb/vcp/usbd_cdc_core.c
+END
+usbd_cdc_vcp.c
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/7/trunk/LogicDiscovery/usb/vcp/usbd_cdc_vcp.c
+END
+usbd_desc.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_desc.h
+END
+usbd_cdc_vcp.h
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_cdc_vcp.h
+END
+usb_conf.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usb_conf.h
+END
+usbd_cdc_core.h
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_cdc_core.h
+END
+usbd_usr.c
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_usr.c
+END
+usbd_conf.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/3/trunk/LogicDiscovery/usb/vcp/usbd_conf.h
+END

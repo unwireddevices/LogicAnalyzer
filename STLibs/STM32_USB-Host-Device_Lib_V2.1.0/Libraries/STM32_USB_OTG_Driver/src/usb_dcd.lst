@@ -1,0 +1,1268 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"usb_dcd.c"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.global	DCD_Init
+  18              		.syntax unified
+  19              		.thumb
+  20              		.thumb_func
+  21              		.fpu fpv4-sp-d16
+  23              	DCD_Init:
+  24              	.LFB110:
+  25              		.file 1 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c"
+   1:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+   2:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ******************************************************************************
+   3:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @file    usb_dcd.c
+   4:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @author  MCD Application Team
+   5:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @version V2.1.0
+   6:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @date    19-March-2012
+   7:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @brief   Peripheral Device Interface Layer
+   8:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ******************************************************************************
+   9:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * @attention
+  10:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *
+  11:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  12:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *
+  13:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  14:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * You may not use this file except in compliance with the License.
+  15:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * You may obtain a copy of the License at:
+  16:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *
+  17:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *        http://www.st.com/software_license_agreement_liberty_v2
+  18:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *
+  19:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * Unless required by applicable law or agreed to in writing, software 
+  20:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * distributed under the License is distributed on an "AS IS" BASIS, 
+  21:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  22:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * See the License for the specific language governing permissions and
+  23:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   * limitations under the License.
+  24:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   *
+  25:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ******************************************************************************
+  26:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   */
+  27:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  28:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /* Includes ------------------------------------------------------------------*/
+  29:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #include "usb_dcd.h"
+  30:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #include "usb_bsp.h"
+  31:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  32:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  33:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @addtogroup USB_OTG_DRIVER
+  34:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  35:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+  36:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  37:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD 
+  38:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief This file is the interface between EFSL ans Host mass-storage class
+  39:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  40:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+  41:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  42:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  43:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_Defines
+  44:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  45:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  46:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+  47:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @}
+  48:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  49:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  50:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  51:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_TypesDefinitions
+  52:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  53:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  54:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+  55:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @}
+  56:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  57:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  58:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  59:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  60:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_Macros
+  61:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  62:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  63:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+  64:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @}
+  65:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  66:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  67:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  68:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_Variables
+  69:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  70:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  71:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+  72:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @}
+  73:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  74:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  75:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  76:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_FunctionPrototypes
+  77:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  78:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  79:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  80:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+  81:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @}
+  82:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  83:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  84:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  85:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /** @defgroup USB_DCD_Private_Functions
+  86:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @{
+  87:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */ 
+  88:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  89:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  90:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+  91:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** void DCD_Init(USB_OTG_CORE_HANDLE *pdev , 
+  92:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****               USB_OTG_CORE_ID_TypeDef coreID)
+  93:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+  26              		.loc 1 93 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              	.LVL0:
+  31 0000 70B5     		push	{r4, r5, r6, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 16
+  34              		.cfi_offset 4, -16
+  35              		.cfi_offset 5, -12
+  36              		.cfi_offset 6, -8
+  37              		.cfi_offset 14, -4
+  38              		.loc 1 93 0
+  39 0002 0446     		mov	r4, r0
+  94:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   uint32_t i;
+  95:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+  96:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+  97:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_SelectCore (pdev , coreID);
+  40              		.loc 1 97 0
+  41 0004 FFF7FEFF 		bl	USB_OTG_SelectCore
+  42              	.LVL1:
+  98:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+  99:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   pdev->dev.device_status = USB_OTG_DEFAULT;
+ 100:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   pdev->dev.device_address = 0;
+  43              		.loc 1 100 0
+  44 0008 0023     		movs	r3, #0
+  99:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   pdev->dev.device_address = 0;
+  45              		.loc 1 99 0
+  46 000a 0121     		movs	r1, #1
+ 101:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 102:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Init ep structure */
+ 103:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   for (i = 0; i < pdev->cfg.dev_endpoints ; i++)
+  47              		.loc 1 103 0
+  48 000c 6578     		ldrb	r5, [r4, #1]	@ zero_extendqisi2
+  99:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   pdev->dev.device_address = 0;
+  49              		.loc 1 99 0
+  50 000e 84F81211 		strb	r1, [r4, #274]
+ 100:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+  51              		.loc 1 100 0
+  52 0012 84F81431 		strb	r3, [r4, #276]
+  53              	.LVL2:
+  54 0016 04F58E72 		add	r2, r4, #284
+ 104:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 105:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[i];
+ 106:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Init ep structure */
+ 107:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->is_in = 1;
+ 108:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->num = i;
+ 109:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->tx_fifo_num = i;
+ 110:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Control until ep is actvated */
+ 111:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->type = EP_TYPE_CTRL;
+  55              		.loc 1 111 0
+  56 001a 1846     		mov	r0, r3
+ 112:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->maxpacket =  USB_OTG_MAX_EP0_SIZE;
+  57              		.loc 1 112 0
+  58 001c 4026     		movs	r6, #64
+  59              	.LVL3:
+  60              	.L2:
+ 103:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+  61              		.loc 1 103 0 discriminator 1
+  62 001e 9D42     		cmp	r5, r3
+  63 0020 02F12802 		add	r2, r2, #40
+  64 0024 1AD8     		bhi	.L3
+ 113:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_buff = 0;
+ 114:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_len = 0;
+ 115:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 116:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 117:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   for (i = 0; i < pdev->cfg.dev_endpoints; i++)
+  65              		.loc 1 117 0
+  66 0026 0022     		movs	r2, #0
+  67 0028 04F55D73 		add	r3, r4, #884
+  68              	.LVL4:
+ 118:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 119:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[i];
+ 120:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Init ep structure */
+ 121:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->is_in = 0;
+  69              		.loc 1 121 0
+  70 002c 1146     		mov	r1, r2
+ 122:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->num = i;
+ 123:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->tx_fifo_num = i;
+ 124:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Control until ep is activated */
+ 125:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->type = EP_TYPE_CTRL;
+ 126:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->maxpacket = USB_OTG_MAX_EP0_SIZE;
+  71              		.loc 1 126 0
+  72 002e 4020     		movs	r0, #64
+  73              	.L4:
+  74              	.LVL5:
+ 117:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+  75              		.loc 1 117 0 discriminator 1
+  76 0030 9542     		cmp	r5, r2
+  77 0032 03F12803 		add	r3, r3, #40
+  78 0036 1FD8     		bhi	.L5
+ 127:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_buff = 0;
+ 128:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_len = 0;
+ 129:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 130:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 131:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_DisableGlobalInt(pdev);
+  79              		.loc 1 131 0
+  80 0038 2046     		mov	r0, r4
+  81 003a FFF7FEFF 		bl	USB_OTG_DisableGlobalInt
+  82              	.LVL6:
+ 132:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 133:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /*Init the Core (common init.) */
+ 134:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_CoreInit(pdev);
+  83              		.loc 1 134 0
+  84 003e 2046     		mov	r0, r4
+  85 0040 FFF7FEFF 		bl	USB_OTG_CoreInit
+  86              	.LVL7:
+ 135:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 136:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 137:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Force Device Mode*/
+ 138:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_SetCurrentMode(pdev, DEVICE_MODE);
+  87              		.loc 1 138 0
+  88 0044 0021     		movs	r1, #0
+  89 0046 2046     		mov	r0, r4
+  90 0048 FFF7FEFF 		bl	USB_OTG_SetCurrentMode
+  91              	.LVL8:
+ 139:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 140:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Init Device */
+ 141:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_CoreInitDev(pdev);
+  92              		.loc 1 141 0
+  93 004c 2046     		mov	r0, r4
+  94 004e FFF7FEFF 		bl	USB_OTG_CoreInitDev
+  95              	.LVL9:
+ 142:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 143:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 144:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Enable USB Global interrupt */
+ 145:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EnableGlobalInt(pdev);
+  96              		.loc 1 145 0
+  97 0052 2046     		mov	r0, r4
+ 146:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+  98              		.loc 1 146 0
+  99 0054 BDE87040 		pop	{r4, r5, r6, lr}
+ 100              	.LCFI1:
+ 101              		.cfi_remember_state
+ 102              		.cfi_restore 14
+ 103              		.cfi_restore 6
+ 104              		.cfi_restore 5
+ 105              		.cfi_restore 4
+ 106              		.cfi_def_cfa_offset 0
+ 107              	.LVL10:
+ 145:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 108              		.loc 1 145 0
+ 109 0058 FFF7FEBF 		b	USB_OTG_EnableGlobalInt
+ 110              	.LVL11:
+ 111              	.L3:
+ 112              	.LCFI2:
+ 113              		.cfi_restore_state
+ 108:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->tx_fifo_num = i;
+ 114              		.loc 1 108 0 discriminator 3
+ 115 005c 02F8283C 		strb	r3, [r2, #-40]
+ 109:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Control until ep is actvated */
+ 116              		.loc 1 109 0 discriminator 3
+ 117 0060 22F8223C 		strh	r3, [r2, #-34]	@ movhi
+ 107:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->num = i;
+ 118              		.loc 1 107 0 discriminator 3
+ 119 0064 02F8271C 		strb	r1, [r2, #-39]
+ 111:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->maxpacket =  USB_OTG_MAX_EP0_SIZE;
+ 120              		.loc 1 111 0 discriminator 3
+ 121 0068 02F8250C 		strb	r0, [r2, #-37]
+ 113:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_len = 0;
+ 122              		.loc 1 113 0 discriminator 3
+ 123 006c 42E90860 		strd	r6, r0, [r2, #-32]
+ 114:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 124              		.loc 1 114 0 discriminator 3
+ 125 0070 42F8140C 		str	r0, [r2, #-20]
+ 103:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 126              		.loc 1 103 0 discriminator 3
+ 127 0074 0133     		adds	r3, r3, #1
+ 128              	.LVL12:
+ 129 0076 D2E7     		b	.L2
+ 130              	.LVL13:
+ 131              	.L5:
+ 122:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->tx_fifo_num = i;
+ 132              		.loc 1 122 0 discriminator 3
+ 133 0078 03F8282C 		strb	r2, [r3, #-40]
+ 123:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Control until ep is activated */
+ 134              		.loc 1 123 0 discriminator 3
+ 135 007c 23F8222C 		strh	r2, [r3, #-34]	@ movhi
+ 121:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->num = i;
+ 136              		.loc 1 121 0 discriminator 3
+ 137 0080 03F8271C 		strb	r1, [r3, #-39]
+ 125:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->maxpacket = USB_OTG_MAX_EP0_SIZE;
+ 138              		.loc 1 125 0 discriminator 3
+ 139 0084 03F8251C 		strb	r1, [r3, #-37]
+ 127:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->xfer_len = 0;
+ 140              		.loc 1 127 0 discriminator 3
+ 141 0088 43E90801 		strd	r0, r1, [r3, #-32]
+ 128:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 142              		.loc 1 128 0 discriminator 3
+ 143 008c 43F8141C 		str	r1, [r3, #-20]
+ 117:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 144              		.loc 1 117 0 discriminator 3
+ 145 0090 0132     		adds	r2, r2, #1
+ 146              	.LVL14:
+ 147 0092 CDE7     		b	.L4
+ 148              		.cfi_endproc
+ 149              	.LFE110:
+ 151              		.align	1
+ 152              		.global	DCD_EP_Open
+ 153              		.syntax unified
+ 154              		.thumb
+ 155              		.thumb_func
+ 156              		.fpu fpv4-sp-d16
+ 158              	DCD_EP_Open:
+ 159              	.LFB111:
+ 147:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 148:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 149:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 150:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Configure an EP
+ 151:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev : Device instance
+ 152:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param epdesc : Endpoint Descriptor
+ 153:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 154:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 155:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t DCD_EP_Open(USB_OTG_CORE_HANDLE *pdev , 
+ 156:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint8_t ep_addr,
+ 157:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint16_t ep_mps,
+ 158:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint8_t ep_type)
+ 159:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 160              		.loc 1 159 0
+ 161              		.cfi_startproc
+ 162              		@ args = 0, pretend = 0, frame = 0
+ 163              		@ frame_needed = 0, uses_anonymous_args = 0
+ 164              	.LVL15:
+ 165 0094 70B5     		push	{r4, r5, r6, lr}
+ 166              	.LCFI3:
+ 167              		.cfi_def_cfa_offset 16
+ 168              		.cfi_offset 4, -16
+ 169              		.cfi_offset 5, -12
+ 170              		.cfi_offset 6, -8
+ 171              		.cfi_offset 14, -4
+ 160:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 161:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 162:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((ep_addr & 0x80) == 0x80)
+ 172              		.loc 1 162 0
+ 173 0096 4EB2     		sxtb	r6, r1
+ 174 0098 01F07F05 		and	r5, r1, #127
+ 175 009c 002E     		cmp	r6, #0
+ 176 009e 4FF02804 		mov	r4, #40
+ 163:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 164:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[ep_addr & 0x7F];
+ 177              		.loc 1 164 0
+ 178 00a2 B5BF     		itete	lt
+ 179 00a4 04FB0501 		mlalt	r1, r4, r5, r0
+ 180              	.LVL16:
+ 165:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 166:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 167:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 168:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[ep_addr & 0x7F];
+ 181              		.loc 1 168 0
+ 182 00a8 04FB0101 		mlage	r1, r4, r1, r0
+ 164:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 183              		.loc 1 164 0
+ 184 00ac 01F58E71 		addlt	r1, r1, #284
+ 185              		.loc 1 168 0
+ 186 00b0 01F55D71 		addge	r1, r1, #884
+ 187              	.LVL17:
+ 169:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 170:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = ep_addr & 0x7F;
+ 171:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 172:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = (0x80 & ep_addr) != 0;
+ 173:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->maxpacket = ep_mps;
+ 174:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->type = ep_type;
+ 175:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if (ep->is_in)
+ 188              		.loc 1 175 0
+ 189 00b4 002E     		cmp	r6, #0
+ 176:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 177:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     /* Assign a Tx FIFO */
+ 178:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->tx_fifo_num = ep->num;
+ 190              		.loc 1 178 0
+ 191 00b6 B8BF     		it	lt
+ 192 00b8 CD80     		strhlt	r5, [r1, #6]	@ movhi
+ 179:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 180:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Set initial data PID. */
+ 181:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if (ep_type == USB_OTG_EP_BULK )
+ 193              		.loc 1 181 0
+ 194 00ba 022B     		cmp	r3, #2
+ 174:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if (ep->is_in)
+ 195              		.loc 1 174 0
+ 196 00bc CB70     		strb	r3, [r1, #3]
+ 172:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->maxpacket = ep_mps;
+ 197              		.loc 1 172 0
+ 198 00be 4FEAD674 		lsr	r4, r6, #31
+ 182:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 183:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->data_pid_start = 0;
+ 199              		.loc 1 183 0
+ 200 00c2 08BF     		it	eq
+ 201 00c4 0023     		moveq	r3, #0
+ 202              	.LVL18:
+ 170:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 203              		.loc 1 170 0
+ 204 00c6 0D70     		strb	r5, [r1]
+ 172:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->maxpacket = ep_mps;
+ 205              		.loc 1 172 0
+ 206 00c8 4C70     		strb	r4, [r1, #1]
+ 173:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->type = ep_type;
+ 207              		.loc 1 173 0
+ 208 00ca 8A60     		str	r2, [r1, #8]
+ 209              		.loc 1 183 0
+ 210 00cc 08BF     		it	eq
+ 211 00ce 0B71     		strbeq	r3, [r1, #4]
+ 184:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 185:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EPActivate(pdev , ep );
+ 212              		.loc 1 185 0
+ 213 00d0 FFF7FEFF 		bl	USB_OTG_EPActivate
+ 214              	.LVL19:
+ 186:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return 0;
+ 187:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 215              		.loc 1 187 0
+ 216 00d4 0020     		movs	r0, #0
+ 217 00d6 70BD     		pop	{r4, r5, r6, pc}
+ 218              		.cfi_endproc
+ 219              	.LFE111:
+ 221              		.align	1
+ 222              		.global	DCD_EP_Close
+ 223              		.syntax unified
+ 224              		.thumb
+ 225              		.thumb_func
+ 226              		.fpu fpv4-sp-d16
+ 228              	DCD_EP_Close:
+ 229              	.LFB112:
+ 188:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 189:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  called when an EP is disabled
+ 190:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 191:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param ep_addr: endpoint address
+ 192:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 193:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 194:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t DCD_EP_Close(USB_OTG_CORE_HANDLE *pdev , uint8_t  ep_addr)
+ 195:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 230              		.loc 1 195 0
+ 231              		.cfi_startproc
+ 232              		@ args = 0, pretend = 0, frame = 0
+ 233              		@ frame_needed = 0, uses_anonymous_args = 0
+ 234              	.LVL20:
+ 196:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 197:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 198:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((ep_addr&0x80) == 0x80)
+ 235              		.loc 1 198 0
+ 236 00d8 4BB2     		sxtb	r3, r1
+ 237 00da 002B     		cmp	r3, #0
+ 195:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 238              		.loc 1 195 0
+ 239 00dc 10B5     		push	{r4, lr}
+ 240              	.LCFI4:
+ 241              		.cfi_def_cfa_offset 8
+ 242              		.cfi_offset 4, -8
+ 243              		.cfi_offset 14, -4
+ 244 00de 4FF02802 		mov	r2, #40
+ 245 00e2 01F07F04 		and	r4, r1, #127
+ 199:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 200:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[ep_addr & 0x7F];
+ 246              		.loc 1 200 0
+ 247 00e6 B5BF     		itete	lt
+ 248 00e8 02FB0401 		mlalt	r1, r2, r4, r0
+ 249              	.LVL21:
+ 201:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 202:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 203:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 204:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[ep_addr & 0x7F];
+ 250              		.loc 1 204 0
+ 251 00ec 02FB0101 		mlage	r1, r2, r1, r0
+ 200:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 252              		.loc 1 200 0
+ 253 00f0 01F58E71 		addlt	r1, r1, #284
+ 254              		.loc 1 204 0
+ 255 00f4 01F55D71 		addge	r1, r1, #884
+ 256              	.LVL22:
+ 205:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 206:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = ep_addr & 0x7F;
+ 207:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = (0x80 & ep_addr) != 0;
+ 257              		.loc 1 207 0
+ 258 00f8 DB0F     		lsrs	r3, r3, #31
+ 259              	.LVL23:
+ 206:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = (0x80 & ep_addr) != 0;
+ 260              		.loc 1 206 0
+ 261 00fa 0C70     		strb	r4, [r1]
+ 262              		.loc 1 207 0
+ 263 00fc 4B70     		strb	r3, [r1, #1]
+ 208:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EPDeactivate(pdev , ep );
+ 264              		.loc 1 208 0
+ 265 00fe FFF7FEFF 		bl	USB_OTG_EPDeactivate
+ 266              	.LVL24:
+ 209:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return 0;
+ 210:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 267              		.loc 1 210 0
+ 268 0102 0020     		movs	r0, #0
+ 269 0104 10BD     		pop	{r4, pc}
+ 270              		.cfi_endproc
+ 271              	.LFE112:
+ 273              		.align	1
+ 274              		.global	DCD_EP_PrepareRx
+ 275              		.syntax unified
+ 276              		.thumb
+ 277              		.thumb_func
+ 278              		.fpu fpv4-sp-d16
+ 280              	DCD_EP_PrepareRx:
+ 281              	.LFB113:
+ 211:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 212:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 213:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 214:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  DCD_EP_PrepareRx
+ 215:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 216:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param ep_addr: endpoint address
+ 217:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pbuf: pointer to Rx buffer
+ 218:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param buf_len: data length
+ 219:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 220:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 221:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t   DCD_EP_PrepareRx( USB_OTG_CORE_HANDLE *pdev,
+ 222:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                             uint8_t   ep_addr,
+ 223:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                             uint8_t *pbuf,                        
+ 224:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                             uint16_t  buf_len)
+ 225:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 282              		.loc 1 225 0
+ 283              		.cfi_startproc
+ 284              		@ args = 0, pretend = 0, frame = 0
+ 285              		@ frame_needed = 0, uses_anonymous_args = 0
+ 286              	.LVL25:
+ 287 0106 70B5     		push	{r4, r5, r6, lr}
+ 288              	.LCFI5:
+ 289              		.cfi_def_cfa_offset 16
+ 290              		.cfi_offset 4, -16
+ 291              		.cfi_offset 5, -12
+ 292              		.cfi_offset 6, -8
+ 293              		.cfi_offset 14, -4
+ 294 0108 01F07F04 		and	r4, r1, #127
+ 226:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 227:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 228:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep = &pdev->dev.out_ep[ep_addr & 0x7F];
+ 295              		.loc 1 228 0
+ 296 010c 2826     		movs	r6, #40
+ 229:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 230:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /*setup and start the Xfer */
+ 231:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_buff = pbuf;  
+ 297              		.loc 1 231 0
+ 298 010e 06FB0405 		mla	r5, r6, r4, r0
+ 228:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 299              		.loc 1 228 0
+ 300 0112 06FB0401 		mla	r1, r6, r4, r0
+ 301              	.LVL26:
+ 232:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_len = buf_len;
+ 302              		.loc 1 232 0
+ 303 0116 C5F88833 		str	r3, [r5, #904]
+ 233:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_count = 0;
+ 304              		.loc 1 233 0
+ 305 011a 0023     		movs	r3, #0
+ 306              	.LVL27:
+ 234:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = 0;
+ 235:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num = ep_addr & 0x7F;
+ 307              		.loc 1 235 0
+ 308 011c 85F87443 		strb	r4, [r5, #884]
+ 231:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_len = buf_len;
+ 309              		.loc 1 231 0
+ 310 0120 C5F88023 		str	r2, [r5, #896]
+ 233:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_count = 0;
+ 311              		.loc 1 233 0
+ 312 0124 C5F88C33 		str	r3, [r5, #908]
+ 234:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = 0;
+ 313              		.loc 1 234 0
+ 314 0128 85F87533 		strb	r3, [r5, #885]
+ 236:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 237:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if (pdev->cfg.dma_enable == 1)
+ 315              		.loc 1 237 0
+ 316 012c C378     		ldrb	r3, [r0, #3]	@ zero_extendqisi2
+ 238:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 239:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep->dma_addr = (uint32_t)pbuf;  
+ 240:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 241:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 242:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ( ep->num == 0 )
+ 317              		.loc 1 242 0
+ 318 012e 06FB0404 		mla	r4, r6, r4, r0
+ 237:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 319              		.loc 1 237 0
+ 320 0132 012B     		cmp	r3, #1
+ 239:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 321              		.loc 1 239 0
+ 322 0134 08BF     		it	eq
+ 323 0136 C5F88423 		streq	r2, [r5, #900]
+ 324              		.loc 1 242 0
+ 325 013a 94F87433 		ldrb	r3, [r4, #884]	@ zero_extendqisi2
+ 228:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 326              		.loc 1 228 0
+ 327 013e 01F55D71 		add	r1, r1, #884
+ 328              	.LVL28:
+ 329              		.loc 1 242 0
+ 330 0142 1BB9     		cbnz	r3, .L16
+ 243:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 244:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_EP0StartXfer(pdev , ep);
+ 331              		.loc 1 244 0
+ 332 0144 FFF7FEFF 		bl	USB_OTG_EP0StartXfer
+ 333              	.LVL29:
+ 334              	.L17:
+ 245:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 246:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 247:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 248:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_EPStartXfer(pdev, ep );
+ 249:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 250:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return 0;
+ 251:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 335              		.loc 1 251 0
+ 336 0148 0020     		movs	r0, #0
+ 337 014a 70BD     		pop	{r4, r5, r6, pc}
+ 338              	.LVL30:
+ 339              	.L16:
+ 248:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 340              		.loc 1 248 0
+ 341 014c FFF7FEFF 		bl	USB_OTG_EPStartXfer
+ 342              	.LVL31:
+ 343 0150 FAE7     		b	.L17
+ 344              		.cfi_endproc
+ 345              	.LFE113:
+ 347              		.align	1
+ 348              		.global	DCD_EP_Tx
+ 349              		.syntax unified
+ 350              		.thumb
+ 351              		.thumb_func
+ 352              		.fpu fpv4-sp-d16
+ 354              	DCD_EP_Tx:
+ 355              	.LFB114:
+ 252:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 253:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 254:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Transmit data over USB
+ 255:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 256:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param ep_addr: endpoint address
+ 257:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pbuf: pointer to Tx buffer
+ 258:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param buf_len: data length
+ 259:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 260:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 261:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t  DCD_EP_Tx ( USB_OTG_CORE_HANDLE *pdev,
+ 262:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint8_t   ep_addr,
+ 263:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint8_t   *pbuf,
+ 264:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****                      uint32_t   buf_len)
+ 265:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 356              		.loc 1 265 0
+ 357              		.cfi_startproc
+ 358              		@ args = 0, pretend = 0, frame = 0
+ 359              		@ frame_needed = 0, uses_anonymous_args = 0
+ 360              	.LVL32:
+ 361 0152 70B5     		push	{r4, r5, r6, lr}
+ 362              	.LCFI6:
+ 363              		.cfi_def_cfa_offset 16
+ 364              		.cfi_offset 4, -16
+ 365              		.cfi_offset 5, -12
+ 366              		.cfi_offset 6, -8
+ 367              		.cfi_offset 14, -4
+ 368 0154 01F07F05 		and	r5, r1, #127
+ 266:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 267:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 268:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep = &pdev->dev.in_ep[ep_addr & 0x7F];
+ 369              		.loc 1 268 0
+ 370 0158 2824     		movs	r4, #40
+ 371 015a 04FB0501 		mla	r1, r4, r5, r0
+ 372              	.LVL33:
+ 269:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 270:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Setup and start the Transfer */
+ 271:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = 1;
+ 373              		.loc 1 271 0
+ 374 015e 04FB0504 		mla	r4, r4, r5, r0
+ 375 0162 0126     		movs	r6, #1
+ 272:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num = ep_addr & 0x7F;  
+ 273:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_buff = pbuf;
+ 376              		.loc 1 273 0
+ 377 0164 C4F82821 		str	r2, [r4, #296]
+ 274:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->dma_addr = (uint32_t)pbuf;  
+ 378              		.loc 1 274 0
+ 379 0168 C4F82C21 		str	r2, [r4, #300]
+ 275:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_count = 0;
+ 380              		.loc 1 275 0
+ 381 016c 0022     		movs	r2, #0
+ 382              	.LVL34:
+ 268:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 383              		.loc 1 268 0
+ 384 016e 01F58E71 		add	r1, r1, #284
+ 385              	.LVL35:
+ 271:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num = ep_addr & 0x7F;  
+ 386              		.loc 1 271 0
+ 387 0172 84F81D61 		strb	r6, [r4, #285]
+ 272:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_buff = pbuf;
+ 388              		.loc 1 272 0
+ 389 0176 84F81C51 		strb	r5, [r4, #284]
+ 390              		.loc 1 275 0
+ 391 017a C4F83421 		str	r2, [r4, #308]
+ 276:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->xfer_len  = buf_len;
+ 392              		.loc 1 276 0
+ 393 017e C4F83031 		str	r3, [r4, #304]
+ 277:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 278:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ( ep->num == 0 )
+ 394              		.loc 1 278 0
+ 395 0182 1DB9     		cbnz	r5, .L19
+ 279:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 280:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_EP0StartXfer(pdev , ep);
+ 396              		.loc 1 280 0
+ 397 0184 FFF7FEFF 		bl	USB_OTG_EP0StartXfer
+ 398              	.LVL36:
+ 399              	.L20:
+ 281:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 282:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 283:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 284:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_EPStartXfer(pdev, ep );
+ 285:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 286:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return 0;
+ 287:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 400              		.loc 1 287 0
+ 401 0188 0020     		movs	r0, #0
+ 402 018a 70BD     		pop	{r4, r5, r6, pc}
+ 403              	.LVL37:
+ 404              	.L19:
+ 284:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 405              		.loc 1 284 0
+ 406 018c FFF7FEFF 		bl	USB_OTG_EPStartXfer
+ 407              	.LVL38:
+ 408 0190 FAE7     		b	.L20
+ 409              		.cfi_endproc
+ 410              	.LFE114:
+ 412              		.align	1
+ 413              		.global	DCD_EP_Stall
+ 414              		.syntax unified
+ 415              		.thumb
+ 416              		.thumb_func
+ 417              		.fpu fpv4-sp-d16
+ 419              	DCD_EP_Stall:
+ 420              	.LFB115:
+ 288:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 289:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 290:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 291:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Stall an endpoint.
+ 292:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 293:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param epnum: endpoint address
+ 294:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 295:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 296:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t  DCD_EP_Stall (USB_OTG_CORE_HANDLE *pdev, uint8_t   epnum)
+ 297:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 421              		.loc 1 297 0
+ 422              		.cfi_startproc
+ 423              		@ args = 0, pretend = 0, frame = 0
+ 424              		@ frame_needed = 0, uses_anonymous_args = 0
+ 425              	.LVL39:
+ 298:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 299:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((0x80 & epnum) == 0x80)
+ 426              		.loc 1 299 0
+ 427 0192 4BB2     		sxtb	r3, r1
+ 428 0194 002B     		cmp	r3, #0
+ 297:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 429              		.loc 1 297 0
+ 430 0196 10B5     		push	{r4, lr}
+ 431              	.LCFI7:
+ 432              		.cfi_def_cfa_offset 8
+ 433              		.cfi_offset 4, -8
+ 434              		.cfi_offset 14, -4
+ 435 0198 4FF02802 		mov	r2, #40
+ 436 019c 01F07F04 		and	r4, r1, #127
+ 300:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 301:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[epnum & 0x7F];
+ 437              		.loc 1 301 0
+ 438 01a0 B5BF     		itete	lt
+ 439 01a2 02FB0401 		mlalt	r1, r2, r4, r0
+ 440              	.LVL40:
+ 302:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 303:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 304:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 305:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[epnum];
+ 441              		.loc 1 305 0
+ 442 01a6 02FB0101 		mlage	r1, r2, r1, r0
+ 301:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 443              		.loc 1 301 0
+ 444 01aa 01F58E71 		addlt	r1, r1, #284
+ 445              		.loc 1 305 0
+ 446 01ae 01F55D71 		addge	r1, r1, #884
+ 447              	.LVL41:
+ 306:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 307:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 308:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_stall = 1;
+ 448              		.loc 1 308 0
+ 449 01b2 0122     		movs	r2, #1
+ 309:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 310:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = ((epnum & 0x80) == 0x80);
+ 450              		.loc 1 310 0
+ 451 01b4 DB0F     		lsrs	r3, r3, #31
+ 452              	.LVL42:
+ 308:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 453              		.loc 1 308 0
+ 454 01b6 8A70     		strb	r2, [r1, #2]
+ 309:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 455              		.loc 1 309 0
+ 456 01b8 0C70     		strb	r4, [r1]
+ 457              		.loc 1 310 0
+ 458 01ba 4B70     		strb	r3, [r1, #1]
+ 311:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 312:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EPSetStall(pdev , ep);
+ 459              		.loc 1 312 0
+ 460 01bc FFF7FEFF 		bl	USB_OTG_EPSetStall
+ 461              	.LVL43:
+ 313:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return (0);
+ 314:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 462              		.loc 1 314 0
+ 463 01c0 0020     		movs	r0, #0
+ 464 01c2 10BD     		pop	{r4, pc}
+ 465              		.cfi_endproc
+ 466              	.LFE115:
+ 468              		.align	1
+ 469              		.global	DCD_EP_ClrStall
+ 470              		.syntax unified
+ 471              		.thumb
+ 472              		.thumb_func
+ 473              		.fpu fpv4-sp-d16
+ 475              	DCD_EP_ClrStall:
+ 476              	.LFB116:
+ 315:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 316:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 317:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 318:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Clear stall condition on endpoints.
+ 319:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 320:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param epnum: endpoint address
+ 321:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 322:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 323:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t  DCD_EP_ClrStall (USB_OTG_CORE_HANDLE *pdev, uint8_t epnum)
+ 324:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 477              		.loc 1 324 0
+ 478              		.cfi_startproc
+ 479              		@ args = 0, pretend = 0, frame = 0
+ 480              		@ frame_needed = 0, uses_anonymous_args = 0
+ 481              	.LVL44:
+ 482 01c4 38B5     		push	{r3, r4, r5, lr}
+ 483              	.LCFI8:
+ 484              		.cfi_def_cfa_offset 16
+ 485              		.cfi_offset 3, -16
+ 486              		.cfi_offset 4, -12
+ 487              		.cfi_offset 5, -8
+ 488              		.cfi_offset 14, -4
+ 325:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 326:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((0x80 & epnum) == 0x80)
+ 489              		.loc 1 326 0
+ 490 01c6 4BB2     		sxtb	r3, r1
+ 491 01c8 01F07F05 		and	r5, r1, #127
+ 492 01cc 002B     		cmp	r3, #0
+ 493 01ce 4FF02802 		mov	r2, #40
+ 327:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 328:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[epnum & 0x7F];    
+ 494              		.loc 1 328 0
+ 495 01d2 B5BF     		itete	lt
+ 496 01d4 02FB0501 		mlalt	r1, r2, r5, r0
+ 497              	.LVL45:
+ 329:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 330:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 331:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 332:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[epnum];
+ 498              		.loc 1 332 0
+ 499 01d8 02FB0101 		mlage	r1, r2, r1, r0
+ 328:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 500              		.loc 1 328 0
+ 501 01dc 01F58E71 		addlt	r1, r1, #284
+ 502              		.loc 1 332 0
+ 503 01e0 01F55D71 		addge	r1, r1, #884
+ 504              	.LVL46:
+ 333:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 334:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 335:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_stall = 0;  
+ 505              		.loc 1 335 0
+ 506 01e4 0024     		movs	r4, #0
+ 336:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 337:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->is_in = ((epnum & 0x80) == 0x80);
+ 507              		.loc 1 337 0
+ 508 01e6 DB0F     		lsrs	r3, r3, #31
+ 509              	.LVL47:
+ 335:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 510              		.loc 1 335 0
+ 511 01e8 8C70     		strb	r4, [r1, #2]
+ 336:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   ep->num   = epnum & 0x7F;
+ 512              		.loc 1 336 0
+ 513 01ea 0D70     		strb	r5, [r1]
+ 514              		.loc 1 337 0
+ 515 01ec 4B70     		strb	r3, [r1, #1]
+ 338:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 339:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EPClearStall(pdev , ep);
+ 516              		.loc 1 339 0
+ 517 01ee FFF7FEFF 		bl	USB_OTG_EPClearStall
+ 518              	.LVL48:
+ 340:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return (0);
+ 341:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 519              		.loc 1 341 0
+ 520 01f2 2046     		mov	r0, r4
+ 521 01f4 38BD     		pop	{r3, r4, r5, pc}
+ 522              		.cfi_endproc
+ 523              	.LFE116:
+ 525              		.align	1
+ 526              		.global	DCD_EP_Flush
+ 527              		.syntax unified
+ 528              		.thumb
+ 529              		.thumb_func
+ 530              		.fpu fpv4-sp-d16
+ 532              	DCD_EP_Flush:
+ 533              	.LFB117:
+ 342:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 343:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 344:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 345:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  This Function flushes the FIFOs.
+ 346:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 347:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param epnum: endpoint address
+ 348:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 349:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 350:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t  DCD_EP_Flush (USB_OTG_CORE_HANDLE *pdev , uint8_t epnum)
+ 351:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 534              		.loc 1 351 0
+ 535              		.cfi_startproc
+ 536              		@ args = 0, pretend = 0, frame = 0
+ 537              		@ frame_needed = 0, uses_anonymous_args = 0
+ 538              	.LVL49:
+ 539 01f6 08B5     		push	{r3, lr}
+ 540              	.LCFI9:
+ 541              		.cfi_def_cfa_offset 8
+ 542              		.cfi_offset 3, -8
+ 543              		.cfi_offset 14, -4
+ 352:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 353:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((epnum & 0x80) == 0x80)
+ 544              		.loc 1 353 0
+ 545 01f8 0B06     		lsls	r3, r1, #24
+ 546 01fa 05D5     		bpl	.L28
+ 354:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 355:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_FlushTxFifo(pdev, epnum & 0x7F);
+ 547              		.loc 1 355 0
+ 548 01fc 01F07F01 		and	r1, r1, #127
+ 549              	.LVL50:
+ 550 0200 FFF7FEFF 		bl	USB_OTG_FlushTxFifo
+ 551              	.LVL51:
+ 552              	.L29:
+ 356:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 357:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 358:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 359:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     USB_OTG_FlushRxFifo(pdev);
+ 360:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 361:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 362:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return (0);
+ 363:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 553              		.loc 1 363 0
+ 554 0204 0020     		movs	r0, #0
+ 555 0206 08BD     		pop	{r3, pc}
+ 556              	.LVL52:
+ 557              	.L28:
+ 359:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 558              		.loc 1 359 0
+ 559 0208 FFF7FEFF 		bl	USB_OTG_FlushRxFifo
+ 560              	.LVL53:
+ 561 020c FAE7     		b	.L29
+ 562              		.cfi_endproc
+ 563              	.LFE117:
+ 565              		.align	1
+ 566              		.global	DCD_EP_SetAddress
+ 567              		.syntax unified
+ 568              		.thumb
+ 569              		.thumb_func
+ 570              		.fpu fpv4-sp-d16
+ 572              	DCD_EP_SetAddress:
+ 573              	.LFB118:
+ 364:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 365:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 366:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 367:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  This Function set USB device address
+ 368:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 369:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param address: new device address
+ 370:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : status
+ 371:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 372:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** void  DCD_EP_SetAddress (USB_OTG_CORE_HANDLE *pdev, uint8_t address)
+ 373:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 574              		.loc 1 373 0
+ 575              		.cfi_startproc
+ 576              		@ args = 0, pretend = 0, frame = 0
+ 577              		@ frame_needed = 0, uses_anonymous_args = 0
+ 578              		@ link register save eliminated.
+ 579              	.LVL54:
+ 374:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_DCFG_TypeDef  dcfg;
+ 375:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dcfg.d32 = 0;
+ 376:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dcfg.b.devaddr = address;
+ 377:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_MODIFY_REG32( &pdev->regs.DREGS->DCFG, 0, dcfg.d32);
+ 580              		.loc 1 377 0
+ 581 020e 0269     		ldr	r2, [r0, #16]
+ 375:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dcfg.b.devaddr = address;
+ 582              		.loc 1 375 0
+ 583 0210 0023     		movs	r3, #0
+ 584              	.LVL55:
+ 376:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_MODIFY_REG32( &pdev->regs.DREGS->DCFG, 0, dcfg.d32);
+ 585              		.loc 1 376 0
+ 586 0212 61F30A13 		bfi	r3, r1, #4, #7
+ 587              	.LVL56:
+ 588              		.loc 1 377 0
+ 589 0216 1168     		ldr	r1, [r2]
+ 590              	.LVL57:
+ 591 0218 0B43     		orrs	r3, r3, r1
+ 592              	.LVL58:
+ 593 021a 1360     		str	r3, [r2]
+ 378:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 594              		.loc 1 378 0
+ 595 021c 7047     		bx	lr
+ 596              		.cfi_endproc
+ 597              	.LFE118:
+ 599              		.align	1
+ 600              		.global	DCD_DevConnect
+ 601              		.syntax unified
+ 602              		.thumb
+ 603              		.thumb_func
+ 604              		.fpu fpv4-sp-d16
+ 606              	DCD_DevConnect:
+ 607              	.LFB119:
+ 379:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 380:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 381:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Connect device (enable internal pull-up)
+ 382:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 383:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : None
+ 384:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 385:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** void  DCD_DevConnect (USB_OTG_CORE_HANDLE *pdev)
+ 386:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 608              		.loc 1 386 0
+ 609              		.cfi_startproc
+ 610              		@ args = 0, pretend = 0, frame = 0
+ 611              		@ frame_needed = 0, uses_anonymous_args = 0
+ 612              		@ link register save eliminated.
+ 613              	.LVL59:
+ 387:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #ifndef USE_OTG_MODE
+ 388:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_DCTL_TypeDef  dctl;
+ 389:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dctl.d32 = USB_OTG_READ_REG32(&pdev->regs.DREGS->DCTL);
+ 614              		.loc 1 389 0
+ 615 021e 0269     		ldr	r2, [r0, #16]
+ 616 0220 5368     		ldr	r3, [r2, #4]
+ 390:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Connect device */
+ 391:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dctl.b.sftdiscon  = 0;
+ 617              		.loc 1 391 0
+ 618 0222 6FF34103 		bfc	r3, #1, #1
+ 619              	.LVL60:
+ 392:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_WRITE_REG32(&pdev->regs.DREGS->DCTL, dctl.d32);
+ 620              		.loc 1 392 0
+ 621 0226 5360     		str	r3, [r2, #4]
+ 393:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_BSP_mDelay(3);
+ 622              		.loc 1 393 0
+ 623 0228 0320     		movs	r0, #3
+ 624              	.LVL61:
+ 625 022a FFF7FEBF 		b	USB_OTG_BSP_mDelay
+ 626              	.LVL62:
+ 627              		.cfi_endproc
+ 628              	.LFE119:
+ 630              		.align	1
+ 631              		.global	DCD_DevDisconnect
+ 632              		.syntax unified
+ 633              		.thumb
+ 634              		.thumb_func
+ 635              		.fpu fpv4-sp-d16
+ 637              	DCD_DevDisconnect:
+ 638              	.LFB120:
+ 394:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #endif
+ 395:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 396:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 397:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 398:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 399:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Disconnect device (disable internal pull-up)
+ 400:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param pdev: device instance
+ 401:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : None
+ 402:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 403:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** void  DCD_DevDisconnect (USB_OTG_CORE_HANDLE *pdev)
+ 404:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 639              		.loc 1 404 0
+ 640              		.cfi_startproc
+ 641              		@ args = 0, pretend = 0, frame = 0
+ 642              		@ frame_needed = 0, uses_anonymous_args = 0
+ 643              		@ link register save eliminated.
+ 644              	.LVL63:
+ 405:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #ifndef USE_OTG_MODE
+ 406:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_DCTL_TypeDef  dctl;
+ 407:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dctl.d32 = USB_OTG_READ_REG32(&pdev->regs.DREGS->DCTL);
+ 645              		.loc 1 407 0
+ 646 022e 0269     		ldr	r2, [r0, #16]
+ 647 0230 5368     		ldr	r3, [r2, #4]
+ 408:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Disconnect device for 3ms */
+ 409:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   dctl.b.sftdiscon  = 1;
+ 648              		.loc 1 409 0
+ 649 0232 43F00203 		orr	r3, r3, #2
+ 650              	.LVL64:
+ 410:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_WRITE_REG32(&pdev->regs.DREGS->DCTL, dctl.d32);
+ 651              		.loc 1 410 0
+ 652 0236 5360     		str	r3, [r2, #4]
+ 411:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_BSP_mDelay(3);
+ 653              		.loc 1 411 0
+ 654 0238 0320     		movs	r0, #3
+ 655              	.LVL65:
+ 656 023a FFF7FEBF 		b	USB_OTG_BSP_mDelay
+ 657              	.LVL66:
+ 658              		.cfi_endproc
+ 659              	.LFE120:
+ 661              		.align	1
+ 662              		.global	DCD_GetEPStatus
+ 663              		.syntax unified
+ 664              		.thumb
+ 665              		.thumb_func
+ 666              		.fpu fpv4-sp-d16
+ 668              	DCD_GetEPStatus:
+ 669              	.LFB121:
+ 412:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** #endif
+ 413:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 414:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 415:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 416:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 417:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  returns the EP Status
+ 418:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param  pdev : Selected device
+ 419:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** *         epnum : endpoint address
+ 420:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : EP status
+ 421:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 422:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 423:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** uint32_t DCD_GetEPStatus(USB_OTG_CORE_HANDLE *pdev ,uint8_t epnum)
+ 424:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 670              		.loc 1 424 0
+ 671              		.cfi_startproc
+ 672              		@ args = 0, pretend = 0, frame = 0
+ 673              		@ frame_needed = 0, uses_anonymous_args = 0
+ 674              		@ link register save eliminated.
+ 675              	.LVL67:
+ 425:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 426:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   uint32_t Status = 0;  
+ 427:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 428:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((0x80 & epnum) == 0x80)
+ 676              		.loc 1 428 0
+ 677 023e 11F0800F 		tst	r1, #128
+ 678 0242 4FF02803 		mov	r3, #40
+ 429:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 430:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[epnum & 0x7F];    
+ 679              		.loc 1 430 0
+ 680 0246 1BBF     		ittet	ne
+ 681 0248 01F07F01 		andne	r1, r1, #127
+ 682              	.LVL68:
+ 683 024c 03FB0101 		mlane	r1, r3, r1, r0
+ 431:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 432:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 433:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 434:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[epnum];
+ 684              		.loc 1 434 0
+ 685 0250 03FB0101 		mlaeq	r1, r3, r1, r0
+ 430:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 686              		.loc 1 430 0
+ 687 0254 01F58E71 		addne	r1, r1, #284
+ 688              		.loc 1 434 0
+ 689 0258 08BF     		it	eq
+ 690 025a 01F55D71 		addeq	r1, r1, #884
+ 691              	.LVL69:
+ 435:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 436:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 437:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   Status = USB_OTG_GetEPStatus(pdev ,ep);
+ 692              		.loc 1 437 0
+ 693 025e FFF7FEBF 		b	USB_OTG_GetEPStatus
+ 694              	.LVL70:
+ 695              		.cfi_endproc
+ 696              	.LFE121:
+ 698              		.align	1
+ 699              		.global	DCD_SetEPStatus
+ 700              		.syntax unified
+ 701              		.thumb
+ 702              		.thumb_func
+ 703              		.fpu fpv4-sp-d16
+ 705              	DCD_SetEPStatus:
+ 706              	.LFB122:
+ 438:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 439:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   /* Return the current status */
+ 440:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   return Status;
+ 441:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** }
+ 442:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** 
+ 443:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** /**
+ 444:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @brief  Set the EP Status
+ 445:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @param  pdev : Selected device
+ 446:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** *         Status : new Status
+ 447:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** *         epnum : EP address
+ 448:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** * @retval : None
+ 449:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** */
+ 450:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** void DCD_SetEPStatus (USB_OTG_CORE_HANDLE *pdev , uint8_t epnum , uint32_t Status)
+ 451:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c **** {
+ 707              		.loc 1 451 0
+ 708              		.cfi_startproc
+ 709              		@ args = 0, pretend = 0, frame = 0
+ 710              		@ frame_needed = 0, uses_anonymous_args = 0
+ 711              		@ link register save eliminated.
+ 712              	.LVL71:
+ 452:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   USB_OTG_EP *ep;
+ 453:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 454:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   if ((0x80 & epnum) == 0x80)
+ 713              		.loc 1 454 0
+ 714 0262 11F0800F 		tst	r1, #128
+ 715 0266 4FF02803 		mov	r3, #40
+ 455:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 456:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.in_ep[epnum & 0x7F];    
+ 716              		.loc 1 456 0
+ 717 026a 1BBF     		ittet	ne
+ 718 026c 01F07F01 		andne	r1, r1, #127
+ 719              	.LVL72:
+ 720 0270 03FB0101 		mlane	r1, r3, r1, r0
+ 457:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 458:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   else
+ 459:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   {
+ 460:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****     ep = &pdev->dev.out_ep[epnum];
+ 721              		.loc 1 460 0
+ 722 0274 03FB0101 		mlaeq	r1, r3, r1, r0
+ 456:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 723              		.loc 1 456 0
+ 724 0278 01F58E71 		addne	r1, r1, #284
+ 725              		.loc 1 460 0
+ 726 027c 08BF     		it	eq
+ 727 027e 01F55D71 		addeq	r1, r1, #884
+ 728              	.LVL73:
+ 461:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   }
+ 462:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****   
+ 463:../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/src/usb_dcd.c ****    USB_OTG_SetEPStatus(pdev ,ep , Status);
+ 729              		.loc 1 463 0
+ 730 0282 FFF7FEBF 		b	USB_OTG_SetEPStatus
+ 731              	.LVL74:
+ 732              		.cfi_endproc
+ 733              	.LFE122:
+ 735              	.Letext0:
+ 736              		.file 2 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 737              		.file 3 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 738              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 739              		.file 5 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 740              		.file 6 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_regs.h
+ 741              		.file 7 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_define
+ 742              		.file 8 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_core.h
+ 743              		.file 9 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_bsp.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 usb_dcd.c
+     /tmp/ccQ2MqmL.s:16     .text:0000000000000000 $t
+     /tmp/ccQ2MqmL.s:23     .text:0000000000000000 DCD_Init
+     /tmp/ccQ2MqmL.s:158    .text:0000000000000094 DCD_EP_Open
+     /tmp/ccQ2MqmL.s:228    .text:00000000000000d8 DCD_EP_Close
+     /tmp/ccQ2MqmL.s:280    .text:0000000000000106 DCD_EP_PrepareRx
+     /tmp/ccQ2MqmL.s:354    .text:0000000000000152 DCD_EP_Tx
+     /tmp/ccQ2MqmL.s:419    .text:0000000000000192 DCD_EP_Stall
+     /tmp/ccQ2MqmL.s:475    .text:00000000000001c4 DCD_EP_ClrStall
+     /tmp/ccQ2MqmL.s:532    .text:00000000000001f6 DCD_EP_Flush
+     /tmp/ccQ2MqmL.s:572    .text:000000000000020e DCD_EP_SetAddress
+     /tmp/ccQ2MqmL.s:606    .text:000000000000021e DCD_DevConnect
+     /tmp/ccQ2MqmL.s:637    .text:000000000000022e DCD_DevDisconnect
+     /tmp/ccQ2MqmL.s:668    .text:000000000000023e DCD_GetEPStatus
+     /tmp/ccQ2MqmL.s:705    .text:0000000000000262 DCD_SetEPStatus
+
+UNDEFINED SYMBOLS
+USB_OTG_SelectCore
+USB_OTG_DisableGlobalInt
+USB_OTG_CoreInit
+USB_OTG_SetCurrentMode
+USB_OTG_CoreInitDev
+USB_OTG_EnableGlobalInt
+USB_OTG_EPActivate
+USB_OTG_EPDeactivate
+USB_OTG_EP0StartXfer
+USB_OTG_EPStartXfer
+USB_OTG_EPSetStall
+USB_OTG_EPClearStall
+USB_OTG_FlushTxFifo
+USB_OTG_FlushRxFifo
+USB_OTG_BSP_mDelay
+USB_OTG_GetEPStatus
+USB_OTG_SetEPStatus

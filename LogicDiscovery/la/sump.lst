@@ -1,0 +1,1847 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"sump.cpp"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.syntax unified
+  18              		.thumb
+  19              		.thumb_func
+  20              		.fpu fpv4-sp-d16
+  22              	_ZL16SamplingCompletev:
+  23              	.LFB128:
+  24              		.file 1 "./la/sump.cpp"
+   1:./la/sump.cpp **** /*
+   2:./la/sump.cpp ****  * sump.cpp
+   3:./la/sump.cpp ****  *
+   4:./la/sump.cpp ****  *  Created on: 11.11.2012
+   5:./la/sump.cpp ****  *      Author: user
+   6:./la/sump.cpp ****  */
+   7:./la/sump.cpp **** 
+   8:./la/sump.cpp **** #include "sump.h"
+   9:./la/sump.cpp **** #include "ramblocks.h"
+  10:./la/sump.cpp **** #include "la_sampling.h"
+  11:./la/sump.cpp **** #include "usbd_cdc_core.h"
+  12:./la/sump.cpp **** #include "nvic.h"
+  13:./la/sump.cpp **** 
+  14:./la/sump.cpp **** typedef void (*SumpByteTXFunction)(uint8_t data);
+  15:./la/sump.cpp **** typedef void (*SumpBufferTXFunction)(uint8_t *data, int count);
+  16:./la/sump.cpp **** 
+  17:./la/sump.cpp **** static SumpByteTXFunction byteTXFunc = NULL;
+  18:./la/sump.cpp **** static SumpBufferTXFunction bufferTXFunc = NULL;
+  19:./la/sump.cpp **** 
+  20:./la/sump.cpp **** static char metaData[] _AHBRAM
+  21:./la/sump.cpp ****      = {SUMP_META_NAME, 'L', 'o', 'g', 'i', 'c', ' ', 'a', 'n', 'a', 'l','y', 'z', 'e', 'r', 0,
+  22:./la/sump.cpp **** 		SUMP_META_FPGA_VERSION, 'N', 'o', 'F', 'P', 'G', 'A', ' ', ':', '(', 0,
+  23:./la/sump.cpp **** 		SUMP_META_CPU_VERSION, 'V', 'e', 'r', 'y', ' ','b' ,'e', 't', 'a', 0,
+  24:./la/sump.cpp **** 		SUMP_META_SAMPLE_RATE, BYTE4(maxSampleRate), BYTE3(maxSampleRate), BYTE2(maxSampleRate), BYTE1(ma
+  25:./la/sump.cpp **** 		SUMP_META_SAMPLE_RAM, 0, 0, BYTE2(maxSampleMemory), BYTE1(maxSampleMemory), //24*1024 b
+  26:./la/sump.cpp **** 		SUMP_META_PROBES_B, 8,
+  27:./la/sump.cpp **** 		SUMP_META_PROTOCOL_B, 2,
+  28:./la/sump.cpp **** 		SUMP_META_END
+  29:./la/sump.cpp **** };
+  30:./la/sump.cpp **** 
+  31:./la/sump.cpp **** static void SamplingComplete();
+  32:./la/sump.cpp **** static void DemoUSARTIrq();
+  33:./la/sump.cpp **** 
+  34:./la/sump.cpp **** void SumpSetTXFunctions(SumpByteTXFunction byteTX, SumpBufferTXFunction bufferTX)
+  35:./la/sump.cpp **** {
+  36:./la/sump.cpp **** 	byteTXFunc = byteTX;
+  37:./la/sump.cpp **** 	bufferTXFunc = bufferTX;
+  38:./la/sump.cpp **** }
+  39:./la/sump.cpp **** 
+  40:./la/sump.cpp **** void SetupDemoTimer()
+  41:./la/sump.cpp **** {
+  42:./la/sump.cpp **** 	USART_InitTypeDef USART_InitStructure;
+  43:./la/sump.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+  44:./la/sump.cpp **** 
+  45:./la/sump.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+  46:./la/sump.cpp **** 
+  47:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;// | GPIO_Pin_3;
+  48:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  49:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  50:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  51:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+  52:./la/sump.cpp **** 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+  53:./la/sump.cpp **** 
+  54:./la/sump.cpp **** 	RCC_APB1PeriphClockCmd(RCC_APB1ENR_USART2EN, ENABLE);
+  55:./la/sump.cpp **** 	USART_InitStructure.USART_BaudRate = 115200;
+  56:./la/sump.cpp **** 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  57:./la/sump.cpp **** 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  58:./la/sump.cpp **** 	USART_InitStructure.USART_Parity = USART_Parity_No;
+  59:./la/sump.cpp **** 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+  60:./la/sump.cpp **** 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+  61:./la/sump.cpp **** 
+  62:./la/sump.cpp **** 	USART_Init(USART2, &USART_InitStructure);
+  63:./la/sump.cpp **** 	USART_Cmd(USART2, ENABLE);
+  64:./la/sump.cpp **** 	//USART2->CR1 = USART_cr1
+  65:./la/sump.cpp **** 	//USART2->BRR = 100;
+  66:./la/sump.cpp **** 
+  67:./la/sump.cpp **** 	RCC_APB1PeriphClockCmd(RCC_APB1ENR_TIM2EN, ENABLE);
+  68:./la/sump.cpp **** 	TIM2->CR1 = TIM_CR1_URS;
+  69:./la/sump.cpp **** 	TIM2->ARR = 19999;
+  70:./la/sump.cpp **** 	TIM2->PSC = 2;
+  71:./la/sump.cpp **** 	TIM2->CR2 = 0;
+  72:./la/sump.cpp **** 	TIM2->DIER = TIM_DIER_UIE;
+  73:./la/sump.cpp **** 	TIM2->CCMR1 = TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
+  74:./la/sump.cpp **** 	TIM2->CCR1 = 100;
+  75:./la/sump.cpp **** 	TIM2->EGR = TIM_EGR_UG;
+  76:./la/sump.cpp **** 	TIM2->CCER = TIM_CCER_CC1E;
+  77:./la/sump.cpp **** 	TIM2->SR &= ~TIM_SR_UIF;
+  78:./la/sump.cpp **** 	InterruptController::EnableChannel(TIM2_IRQn, 2, 0, DemoUSARTIrq);
+  79:./la/sump.cpp **** 	TIM2->CR1 = TIM_CR1_URS | TIM_CR1_CEN;
+  80:./la/sump.cpp **** 
+  81:./la/sump.cpp **** 	/* Connect TIM3 pins to AF2 */
+  82:./la/sump.cpp **** 	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_TIM2);
+  83:./la/sump.cpp **** 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_USART2);
+  84:./la/sump.cpp **** 	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
+  85:./la/sump.cpp **** }
+  86:./la/sump.cpp **** 
+  87:./la/sump.cpp **** static uint8_t num = 0;
+  88:./la/sump.cpp **** static void DemoUSARTIrq()
+  89:./la/sump.cpp **** {
+  90:./la/sump.cpp **** 	TIM2->SR &= ~TIM_SR_UIF;
+  91:./la/sump.cpp **** 	if(USART2->SR & USART_SR_TXE)
+  92:./la/sump.cpp **** 		USART2->DR = num++;
+  93:./la/sump.cpp **** }
+  94:./la/sump.cpp **** 
+  95:./la/sump.cpp **** int SumpIsShortCommand(uint8_t command)
+  96:./la/sump.cpp **** {
+  97:./la/sump.cpp **** 	switch(command)
+  98:./la/sump.cpp **** 	{
+  99:./la/sump.cpp **** 	case SUMP_CMD_RESET:
+ 100:./la/sump.cpp **** 	case SUMP_CMD_RUN:
+ 101:./la/sump.cpp **** 	case SUMP_CMD_ID:
+ 102:./la/sump.cpp **** 	case SUMP_CMD_META:
+ 103:./la/sump.cpp **** 		return true;
+ 104:./la/sump.cpp **** 	default:
+ 105:./la/sump.cpp **** 		return false;
+ 106:./la/sump.cpp **** 	}
+ 107:./la/sump.cpp **** }
+ 108:./la/sump.cpp **** 
+ 109:./la/sump.cpp **** uint32_t CalcLocalDivider(uint32_t divider, const uint32_t localFrequency, const uint32_t sumpFrequ
+ 110:./la/sump.cpp **** {
+ 111:./la/sump.cpp **** 	return localFrequency / (sumpFrequency / (divider + 1)) - 1;
+ 112:./la/sump.cpp **** }
+ 113:./la/sump.cpp **** 
+ 114:./la/sump.cpp **** //extern CDC_IF_Prop_TypeDef VCP_fops;
+ 115:./la/sump.cpp **** //static char text[40];
+ 116:./la/sump.cpp **** //static int samplingReadCount = 1024;
+ 117:./la/sump.cpp **** //static int samplingDelayCount = 0;
+ 118:./la/sump.cpp **** static uint32_t divider = 1;
+ 119:./la/sump.cpp **** static int startup = 1;
+ 120:./la/sump.cpp **** int SumpProcessRequest(uint8_t *buffer, int len)
+ 121:./la/sump.cpp **** {
+ 122:./la/sump.cpp **** 	int result = 0;
+ 123:./la/sump.cpp **** 	switch(buffer[0])
+ 124:./la/sump.cpp **** 	{
+ 125:./la/sump.cpp **** 	case SUMP_CMD_RESET://reset
+ 126:./la/sump.cpp **** 		if(startup)
+ 127:./la/sump.cpp **** 		{
+ 128:./la/sump.cpp **** 			SetupDemoTimer();
+ 129:./la/sump.cpp **** 			startup = 0;
+ 130:./la/sump.cpp **** 		}
+ 131:./la/sump.cpp **** 		//SamplingSetupTimer(16);
+ 132:./la/sump.cpp **** 		sampler.Stop();
+ 133:./la/sump.cpp **** 	    result = 1;
+ 134:./la/sump.cpp **** 	  break;
+ 135:./la/sump.cpp **** 	case SUMP_CMD_RUN://run
+ 136:./la/sump.cpp **** 		SamplingClearBuffer();
+ 137:./la/sump.cpp **** 		sampler.Start();
+ 138:./la/sump.cpp **** 		sampler.Arm(SamplingComplete);
+ 139:./la/sump.cpp **** 		result = 1;
+ 140:./la/sump.cpp **** 	  break;
+ 141:./la/sump.cpp **** 	case SUMP_CMD_ID://ID
+ 142:./la/sump.cpp **** 		//APP_FOPS.pIf_DataTx((uint8_t*)"1ALS", 4);
+ 143:./la/sump.cpp **** 		bufferTXFunc((uint8_t*)"1ALS", 4);
+ 144:./la/sump.cpp **** 		result = 1;
+ 145:./la/sump.cpp **** 	  break;
+ 146:./la/sump.cpp **** 	case SUMP_CMD_META://Query metas
+ 147:./la/sump.cpp **** 		//APP_FOPS.pIf_DataTx((uint8_t*)metaData, sizeof(metaData));
+ 148:./la/sump.cpp **** 		bufferTXFunc((uint8_t*)metaData, sizeof(metaData));
+ 149:./la/sump.cpp **** 		result = 1;
+ 150:./la/sump.cpp **** 	  break;
+ 151:./la/sump.cpp **** 	case SUMP_CMD_SET_SAMPLE_RATE:
+ 152:./la/sump.cpp **** 		if(len == 5)
+ 153:./la/sump.cpp **** 		{
+ 154:./la/sump.cpp **** 			//div120 = 120MHz / (100MHz / (div100 + 1)) - 1;
+ 155:./la/sump.cpp **** 			divider = *((uint32_t*)(buffer+1));
+ 156:./la/sump.cpp **** 			//if maximum samplerate is 20MHz => 100/20 = 5, 5 - 1 = 4
+ 157:./la/sump.cpp **** 			if(divider != 0)
+ 158:./la/sump.cpp **** 			{
+ 159:./la/sump.cpp **** 				RCC_ClocksTypeDef clocks;
+ 160:./la/sump.cpp **** 				RCC_GetClocksFreq(&clocks);
+ 161:./la/sump.cpp **** 				divider = CalcLocalDivider(divider, clocks.SYSCLK_Frequency, SUMP_ORIGINAL_FREQ);
+ 162:./la/sump.cpp **** 			}
+ 163:./la/sump.cpp **** 			if(divider == 0)
+ 164:./la/sump.cpp **** 			{
+ 165:./la/sump.cpp **** 				divider = 1;
+ 166:./la/sump.cpp **** 			}
+ 167:./la/sump.cpp **** 			sampler.SetSamplingPeriod(divider);
+ 168:./la/sump.cpp **** 			result = 1;
+ 169:./la/sump.cpp **** 			//GUI_Text(0, 14, (uint8_t*)text, White, Black);
+ 170:./la/sump.cpp **** 		}
+ 171:./la/sump.cpp **** 		break;
+ 172:./la/sump.cpp **** 	case SUMP_CMD_SET_COUNTS:
+ 173:./la/sump.cpp **** 		if(len == 5)
+ 174:./la/sump.cpp **** 		{
+ 175:./la/sump.cpp **** 			uint16_t readCount  = 1 + *((uint16_t*)(buffer+1));
+ 176:./la/sump.cpp **** 			uint16_t delayCount = *((uint16_t*)(buffer+3));
+ 177:./la/sump.cpp **** 			sampler.SetBufferSize(4*readCount);
+ 178:./la/sump.cpp **** 			sampler.SetDelayCount(4*delayCount);
+ 179:./la/sump.cpp **** 			result = 1;
+ 180:./la/sump.cpp **** 			//GUI_Text(100, 14, (uint8_t*)text, White, Black);
+ 181:./la/sump.cpp **** 		}
+ 182:./la/sump.cpp **** 		break;
+ 183:./la/sump.cpp **** 	case SUMP_CMD_SET_BT0_MASK:
+ 184:./la/sump.cpp **** 		if(len == 5)
+ 185:./la/sump.cpp **** 		{
+ 186:./la/sump.cpp **** 			sampler.SetTriggerMask(*(uint32_t*)(buffer+1));
+ 187:./la/sump.cpp **** 			result = 1;
+ 188:./la/sump.cpp **** 		}
+ 189:./la/sump.cpp **** 		break;
+ 190:./la/sump.cpp **** 	case SUMP_CMD_SET_BT0_VALUE:
+ 191:./la/sump.cpp **** 		if(len == 5)
+ 192:./la/sump.cpp **** 		{
+ 193:./la/sump.cpp **** 			sampler.SetTriggerValue(*(uint32_t*)(buffer+1));
+ 194:./la/sump.cpp **** 			result = 1;
+ 195:./la/sump.cpp **** 		}
+ 196:./la/sump.cpp **** 		break;
+ 197:./la/sump.cpp **** 	case SUMP_CMD_SET_FLAGS:
+ 198:./la/sump.cpp **** 		if(len == 5)
+ 199:./la/sump.cpp **** 		{
+ 200:./la/sump.cpp **** 			sampler.SetFlags(*(uint16_t*)(buffer+1));
+ 201:./la/sump.cpp **** 			result = 1;
+ 202:./la/sump.cpp **** 		}
+ 203:./la/sump.cpp **** 		break;
+ 204:./la/sump.cpp **** 	}
+ 205:./la/sump.cpp **** 	return result;
+ 206:./la/sump.cpp **** }
+ 207:./la/sump.cpp **** 
+ 208:./la/sump.cpp **** void SamplingComplete()
+ 209:./la/sump.cpp **** {
+  25              		.loc 1 209 0
+  26              		.cfi_startproc
+  27              		@ args = 0, pretend = 0, frame = 0
+  28              		@ frame_needed = 0, uses_anonymous_args = 0
+  29 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+  30              	.LCFI0:
+  31              		.cfi_def_cfa_offset 24
+  32              		.cfi_offset 4, -24
+  33              		.cfi_offset 5, -20
+  34              		.cfi_offset 6, -16
+  35              		.cfi_offset 7, -12
+  36              		.cfi_offset 8, -8
+  37              		.cfi_offset 14, -4
+  38              	.LBB52:
+  39              	.LBB53:
+  40              		.file 2 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h"
+   1:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /**************************************************************************//**
+   2:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @file     core_cmFunc.h
+   3:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @brief    CMSIS Cortex-M Core Function Access Header File
+   4:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @version  V2.10
+   5:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @date     26. July 2011
+   6:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  *
+   7:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @note
+   8:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * Copyright (C) 2009-2011 ARM Limited. All rights reserved.
+   9:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  *
+  10:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @par
+  11:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * ARM Limited (ARM) is supplying this software for use with Cortex-M 
+  12:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * processor based microcontrollers.  This file can be freely distributed 
+  13:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * within development tools that are supporting such ARM based processors. 
+  14:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  *
+  15:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * @par
+  16:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
+  17:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
+  18:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
+  19:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * ARM SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR
+  20:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  * CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+  21:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  *
+  22:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  ******************************************************************************/
+  23:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  24:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #ifndef __CORE_CMFUNC_H
+  25:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #define __CORE_CMFUNC_H
+  26:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  27:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  28:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* ###########################  Core Function Access  ########################### */
+  29:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \ingroup  CMSIS_Core_FunctionInterface   
+  30:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \defgroup CMSIS_Core_RegAccFunctions CMSIS Core Register Access Functions
+  31:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   @{
+  32:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+  33:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  34:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if   defined ( __CC_ARM ) /*------------------RealView Compiler -----------------*/
+  35:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* ARM armcc specific functions */
+  36:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  37:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if (__ARMCC_VERSION < 400677)
+  38:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   #error "Please use ARM Compiler Toolchain V4.0.677 or later!"
+  39:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #endif
+  40:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  41:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* intrinsic void __enable_irq();     */
+  42:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* intrinsic void __disable_irq();    */
+  43:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  44:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Control Register
+  45:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  46:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the content of the Control Register.
+  47:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  48:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               Control Register value
+  49:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+  50:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_CONTROL(void)
+  51:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+  52:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regControl         __ASM("control");
+  53:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regControl);
+  54:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+  55:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  56:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  57:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Control Register
+  58:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  59:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function writes the given value to the Control Register.
+  60:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  61:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    control  Control Register value to set
+  62:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+  63:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_CONTROL(uint32_t control)
+  64:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+  65:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regControl         __ASM("control");
+  66:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regControl = control;
+  67:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+  68:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  69:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  70:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get ISPR Register
+  71:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  72:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the content of the ISPR Register.
+  73:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  74:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               ISPR Register value
+  75:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+  76:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_IPSR(void)
+  77:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+  78:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regIPSR          __ASM("ipsr");
+  79:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regIPSR);
+  80:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+  81:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  82:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  83:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get APSR Register
+  84:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  85:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the content of the APSR Register.
+  86:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  87:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               APSR Register value
+  88:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+  89:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_APSR(void)
+  90:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+  91:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regAPSR          __ASM("apsr");
+  92:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regAPSR);
+  93:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+  94:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  95:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  96:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get xPSR Register
+  97:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+  98:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the content of the xPSR Register.
+  99:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 100:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               xPSR Register value
+ 101:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 102:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_xPSR(void)
+ 103:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 104:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regXPSR          __ASM("xpsr");
+ 105:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regXPSR);
+ 106:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 107:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 108:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 109:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Process Stack Pointer
+ 110:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 111:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current value of the Process Stack Pointer (PSP).
+ 112:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 113:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               PSP Register value
+ 114:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 115:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_PSP(void)
+ 116:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 117:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regProcessStackPointer  __ASM("psp");
+ 118:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regProcessStackPointer);
+ 119:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 120:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 121:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 122:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Process Stack Pointer
+ 123:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 124:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Process Stack Pointer (PSP).
+ 125:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 126:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    topOfProcStack  Process Stack Pointer value to set
+ 127:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 128:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_PSP(uint32_t topOfProcStack)
+ 129:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 130:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regProcessStackPointer  __ASM("psp");
+ 131:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regProcessStackPointer = topOfProcStack;
+ 132:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 133:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 134:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 135:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Main Stack Pointer
+ 136:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 137:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current value of the Main Stack Pointer (MSP).
+ 138:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 139:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               MSP Register value
+ 140:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 141:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_MSP(void)
+ 142:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 143:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regMainStackPointer     __ASM("msp");
+ 144:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regMainStackPointer);
+ 145:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 146:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 147:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 148:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Main Stack Pointer
+ 149:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 150:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Main Stack Pointer (MSP).
+ 151:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 152:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    topOfMainStack  Main Stack Pointer value to set
+ 153:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 154:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_MSP(uint32_t topOfMainStack)
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 156:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regMainStackPointer     __ASM("msp");
+ 157:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regMainStackPointer = topOfMainStack;
+ 158:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 159:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 160:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 161:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Priority Mask
+ 162:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 163:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current state of the priority mask bit from the Priority Mask Registe
+ 164:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               Priority Mask value
+ 166:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 167:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_PRIMASK(void)
+ 168:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 169:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regPriMask         __ASM("primask");
+ 170:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regPriMask);
+ 171:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 172:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 173:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 174:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Priority Mask
+ 175:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 176:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Priority Mask Register.
+ 177:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 178:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    priMask  Priority Mask
+ 179:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 180:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_PRIMASK(uint32_t priMask)
+ 181:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 182:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regPriMask         __ASM("primask");
+ 183:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regPriMask = (priMask);
+ 184:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 185:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  
+ 186:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 187:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if       (__CORTEX_M >= 0x03)
+ 188:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 189:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Enable FIQ
+ 190:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 191:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function enables FIQ interrupts by clearing the F-bit in the CPSR.
+ 192:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     Can only be executed in Privileged modes.
+ 193:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 194:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #define __enable_fault_irq                __enable_fiq
+ 195:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 196:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 197:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Disable FIQ
+ 198:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 199:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function disables FIQ interrupts by setting the F-bit in the CPSR.
+ 200:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     Can only be executed in Privileged modes.
+ 201:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 202:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #define __disable_fault_irq               __disable_fiq
+ 203:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 204:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 205:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Base Priority
+ 206:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 207:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current value of the Base Priority register.
+ 208:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 209:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               Base Priority register value
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 211:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t  __get_BASEPRI(void)
+ 212:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 213:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regBasePri         __ASM("basepri");
+ 214:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regBasePri);
+ 215:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 216:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 217:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 218:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Base Priority
+ 219:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 220:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Base Priority register.
+ 221:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 222:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    basePri  Base Priority value to set
+ 223:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 224:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_BASEPRI(uint32_t basePri)
+ 225:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 226:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regBasePri         __ASM("basepri");
+ 227:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regBasePri = (basePri & 0xff);
+ 228:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 229:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  
+ 230:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 231:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get Fault Mask
+ 232:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 233:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current value of the Fault Mask register.
+ 234:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 235:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               Fault Mask register value
+ 236:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 237:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_FAULTMASK(void)
+ 238:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 239:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regFaultMask       __ASM("faultmask");
+ 240:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regFaultMask);
+ 241:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 242:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 243:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 244:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set Fault Mask
+ 245:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 246:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Fault Mask register.
+ 247:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 248:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    faultMask  Fault Mask value to set
+ 249:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 250:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_FAULTMASK(uint32_t faultMask)
+ 251:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 252:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regFaultMask       __ASM("faultmask");
+ 253:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regFaultMask = (faultMask & (uint32_t)1);
+ 254:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 255:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 256:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #endif /* (__CORTEX_M >= 0x03) */
+ 257:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 258:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 259:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if       (__CORTEX_M == 0x04)
+ 260:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 261:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Get FPSCR
+ 262:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 263:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function returns the current value of the Floating Point Status/Control register.
+ 264:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 265:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \return               Floating Point Status/Control register value
+ 266:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 267:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE uint32_t __get_FPSCR(void)
+ 268:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 269:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+ 270:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regfpscr         __ASM("fpscr");
+ 271:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   return(__regfpscr);
+ 272:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #else
+ 273:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****    return(0);
+ 274:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #endif
+ 275:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 276:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 277:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 278:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Set FPSCR
+ 279:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 280:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     This function assigns the given value to the Floating Point Status/Control register.
+ 281:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 282:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****     \param [in]    fpscr  Floating Point Status/Control value to set
+ 283:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 284:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** static __INLINE void __set_FPSCR(uint32_t fpscr)
+ 285:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 286:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   (void)fpscr;
+ 287:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+ 288:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   register uint32_t __regfpscr         __ASM("fpscr");
+ 289:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __regfpscr = (fpscr);
+ 290:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #endif
+ 291:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 292:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 293:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #endif /* (__CORTEX_M == 0x04) */
+ 294:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 295:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 296:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #elif defined ( __ICCARM__ ) /*------------------ ICC Compiler -------------------*/
+ 297:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* IAR iccarm specific functions */
+ 298:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 299:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #include <cmsis_iar.h>
+ 300:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 301:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** #elif defined ( __GNUC__ ) /*------------------ GNU Compiler ---------------------*/
+ 302:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /* GNU gcc specific functions */
+ 303:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 304:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Enable IRQ Interrupts
+ 305:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 306:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   This function enables IRQ interrupts by clearing the I-bit in the CPSR.
+ 307:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   Can only be executed in Privileged modes.
+ 308:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 309:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** __attribute__( ( always_inline ) ) static __INLINE void __enable_irq(void)
+ 310:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 311:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __ASM volatile ("cpsie i");
+ 312:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 313:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 314:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 315:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** /** \brief  Disable IRQ Interrupts
+ 316:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** 
+ 317:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   This function disables IRQ interrupts by setting the I-bit in the CPSR.
+ 318:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   Can only be executed in Privileged modes.
+ 319:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****  */
+ 320:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** __attribute__( ( always_inline ) ) static __INLINE void __disable_irq(void)
+ 321:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** {
+ 322:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h ****   __ASM volatile ("cpsid i");
+  41              		.loc 2 322 0
+  42              		.syntax unified
+  43              	@ 322 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h" 1
+  44 0004 72B6     		cpsid i
+  45              	@ 0 "" 2
+  46              		.thumb
+  47              		.syntax unified
+  48 0006 334C     		ldr	r4, .L10
+  49 0008 E368     		ldr	r3, [r4, #12]
+  50              	.LVL0:
+  51              	.LBE53:
+  52              	.LBE52:
+  53              	.LBB54:
+ 210:./la/sump.cpp **** 	uint32_t i;
+ 211:./la/sump.cpp **** 	__disable_irq();
+ 212:./la/sump.cpp **** 	if(sampler.GetBytesPerTransfer() == 1)
+  54              		.loc 1 212 0
+  55 000a 012B     		cmp	r3, #1
+  56 000c 2646     		mov	r6, r4
+  57 000e 29D1     		bne	.L2
+  58              	.LBB55:
+ 213:./la/sump.cpp **** 	{
+ 214:./la/sump.cpp **** 		uint8_t* ptr = sampler.GetBufferTail() - 1;//sampler.GetBytesPerTransfer();
+  59              		.loc 1 214 0
+  60 0010 2046     		mov	r0, r4
+  61 0012 FFF7FEFF 		bl	_ZN7Sampler13GetBufferTailEv
+  62              	.LVL1:
+ 215:./la/sump.cpp **** 		//SUMP requests samples to be sent in reverse order: newest items first
+ 216:./la/sump.cpp **** 		for(i = 0; i < sampler.GetBufferTailSize(); i++)
+ 217:./la/sump.cpp **** 		{
+ 218:./la/sump.cpp **** 			byteTXFunc(*ptr);//VCP_ByteTx(*ptr);
+  63              		.loc 1 218 0
+  64 0016 304F     		ldr	r7, .L10+4
+ 214:./la/sump.cpp **** 		//SUMP requests samples to be sent in reverse order: newest items first
+  65              		.loc 1 214 0
+  66 0018 461E     		subs	r6, r0, #1
+  67              	.LVL2:
+  68 001a B046     		mov	r8, r6
+  69              	.LVL3:
+  70              	.L4:
+ 216:./la/sump.cpp **** 		{
+  71              		.loc 1 216 0 discriminator 3
+  72 001c 2046     		mov	r0, r4
+  73 001e FFF7FEFF 		bl	_ZN7Sampler17GetBufferTailSizeEv
+  74              	.LVL4:
+  75 0022 A8EB0605 		sub	r5, r8, r6
+  76              	.LVL5:
+  77 0026 A842     		cmp	r0, r5
+  78 0028 04D9     		bls	.L3
+  79              		.loc 1 218 0 discriminator 2
+  80 002a 3B68     		ldr	r3, [r7]
+  81 002c 16F80109 		ldrb	r0, [r6], #-1	@ zero_extendqisi2
+  82              	.LVL6:
+  83 0030 9847     		blx	r3
+  84              	.LVL7:
+ 216:./la/sump.cpp **** 		{
+  85              		.loc 1 216 0 discriminator 2
+  86 0032 F3E7     		b	.L4
+  87              	.LVL8:
+  88              	.L3:
+ 219:./la/sump.cpp **** 			ptr--;
+ 220:./la/sump.cpp **** 		}
+ 221:./la/sump.cpp **** 		ptr = sampler.GetBuffer() + sampler.GetBufferSize() - 1;
+  89              		.loc 1 221 0
+  90 0034 2748     		ldr	r0, .L10
+ 222:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i++)
+  91              		.loc 1 222 0
+  92 0036 DFF89C80 		ldr	r8, .L10
+ 223:./la/sump.cpp **** 		{
+ 224:./la/sump.cpp **** 			byteTXFunc(*ptr);//VCP_ByteTx(*ptr);
+  93              		.loc 1 224 0
+  94 003a 274F     		ldr	r7, .L10+4
+ 221:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i++)
+  95              		.loc 1 221 0
+  96 003c FFF7FEFF 		bl	_ZN7Sampler9GetBufferEv
+  97              	.LVL9:
+  98 0040 0446     		mov	r4, r0
+  99 0042 2448     		ldr	r0, .L10
+ 100 0044 FFF7FEFF 		bl	_ZN7Sampler13GetBufferSizeEv
+ 101              	.LVL10:
+ 102 0048 0138     		subs	r0, r0, #1
+ 103 004a 0444     		add	r4, r4, r0
+ 104              	.LVL11:
+ 105 004c 2544     		add	r5, r5, r4
+ 106              	.LVL12:
+ 107              	.L6:
+ 222:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i++)
+ 108              		.loc 1 222 0 discriminator 2
+ 109 004e 4046     		mov	r0, r8
+ 110 0050 FFF7FEFF 		bl	_ZN7Sampler13GetBufferSizeEv
+ 111              	.LVL13:
+ 112 0054 2E1B     		subs	r6, r5, r4
+ 113              	.LVL14:
+ 114 0056 B042     		cmp	r0, r6
+ 115 0058 39D9     		bls	.L5
+ 116              		.loc 1 224 0 discriminator 1
+ 117 005a 3B68     		ldr	r3, [r7]
+ 118 005c 14F80109 		ldrb	r0, [r4], #-1	@ zero_extendqisi2
+ 119              	.LVL15:
+ 120 0060 9847     		blx	r3
+ 121              	.LVL16:
+ 222:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i++)
+ 122              		.loc 1 222 0 discriminator 1
+ 123 0062 F4E7     		b	.L6
+ 124              	.LVL17:
+ 125              	.L2:
+ 126              	.LBE55:
+ 127              	.LBB56:
+ 225:./la/sump.cpp **** 			ptr--;
+ 226:./la/sump.cpp **** 		}
+ 227:./la/sump.cpp **** 	}
+ 228:./la/sump.cpp **** 	else if(sampler.GetBytesPerTransfer() == 2)
+ 128              		.loc 1 228 0
+ 129 0064 022B     		cmp	r3, #2
+ 130 0066 32D1     		bne	.L5
+ 131              	.LBB57:
+ 229:./la/sump.cpp **** 	{
+ 230:./la/sump.cpp **** 		uint8_t *ptr = sampler.GetBufferTail() - sampler.GetBytesPerTransfer();
+ 132              		.loc 1 230 0
+ 133 0068 2046     		mov	r0, r4
+ 134 006a FFF7FEFF 		bl	_ZN7Sampler13GetBufferTailEv
+ 135              	.LVL18:
+ 136 006e E568     		ldr	r5, [r4, #12]
+ 231:./la/sump.cpp **** 		for(i = 0; i < sampler.GetBufferTailSize(); i += sampler.GetBytesPerTransfer())
+ 232:./la/sump.cpp **** 		{
+ 233:./la/sump.cpp **** 			byteTXFunc(ptr[0]);
+ 137              		.loc 1 233 0
+ 138 0070 194F     		ldr	r7, .L10+4
+ 230:./la/sump.cpp **** 		for(i = 0; i < sampler.GetBufferTailSize(); i += sampler.GetBytesPerTransfer())
+ 139              		.loc 1 230 0
+ 140 0072 451B     		subs	r5, r0, r5
+ 141              	.LVL19:
+ 231:./la/sump.cpp **** 		for(i = 0; i < sampler.GetBufferTailSize(); i += sampler.GetBytesPerTransfer())
+ 142              		.loc 1 231 0
+ 143 0074 0024     		movs	r4, #0
+ 144 0076 B046     		mov	r8, r6
+ 145              	.LVL20:
+ 146              	.L8:
+ 231:./la/sump.cpp **** 		for(i = 0; i < sampler.GetBufferTailSize(); i += sampler.GetBytesPerTransfer())
+ 147              		.loc 1 231 0 is_stmt 0 discriminator 3
+ 148 0078 4046     		mov	r0, r8
+ 149 007a FFF7FEFF 		bl	_ZN7Sampler17GetBufferTailSizeEv
+ 150              	.LVL21:
+ 151 007e A042     		cmp	r0, r4
+ 152 0080 09D9     		bls	.L7
+ 153              		.loc 1 233 0 is_stmt 1 discriminator 2
+ 154 0082 2878     		ldrb	r0, [r5]	@ zero_extendqisi2
+ 155 0084 3B68     		ldr	r3, [r7]
+ 156 0086 9847     		blx	r3
+ 157              	.LVL22:
+ 234:./la/sump.cpp **** 			byteTXFunc(ptr[1]);
+ 158              		.loc 1 234 0 discriminator 2
+ 159 0088 3B68     		ldr	r3, [r7]
+ 160 008a 6878     		ldrb	r0, [r5, #1]	@ zero_extendqisi2
+ 161 008c 9847     		blx	r3
+ 162              	.LVL23:
+ 235:./la/sump.cpp **** 			ptr -= sampler.GetBytesPerTransfer();
+ 163              		.loc 1 235 0 discriminator 2
+ 164 008e F368     		ldr	r3, [r6, #12]
+ 165 0090 ED1A     		subs	r5, r5, r3
+ 166              	.LVL24:
+ 231:./la/sump.cpp **** 		{
+ 167              		.loc 1 231 0 discriminator 2
+ 168 0092 1C44     		add	r4, r4, r3
+ 169              	.LVL25:
+ 170 0094 F0E7     		b	.L8
+ 171              	.LVL26:
+ 172              	.L7:
+ 236:./la/sump.cpp **** 		}
+ 237:./la/sump.cpp **** 		ptr = sampler.GetBuffer() + sampler.GetBufferSize() - sampler.GetBytesPerTransfer();
+ 173              		.loc 1 237 0
+ 174 0096 0F48     		ldr	r0, .L10
+ 238:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i += sampler.GetBytesPerTransfer())
+ 175              		.loc 1 238 0
+ 176 0098 DFF83880 		ldr	r8, .L10
+ 239:./la/sump.cpp **** 		{
+ 240:./la/sump.cpp **** 			byteTXFunc(ptr[0]);
+ 177              		.loc 1 240 0
+ 178 009c 0E4F     		ldr	r7, .L10+4
+ 237:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i += sampler.GetBytesPerTransfer())
+ 179              		.loc 1 237 0
+ 180 009e FFF7FEFF 		bl	_ZN7Sampler9GetBufferEv
+ 181              	.LVL27:
+ 182 00a2 0546     		mov	r5, r0
+ 183              	.LVL28:
+ 184 00a4 0B48     		ldr	r0, .L10
+ 185 00a6 FFF7FEFF 		bl	_ZN7Sampler13GetBufferSizeEv
+ 186              	.LVL29:
+ 187 00aa F368     		ldr	r3, [r6, #12]
+ 188 00ac C01A     		subs	r0, r0, r3
+ 189 00ae 0544     		add	r5, r5, r0
+ 190              	.LVL30:
+ 191              	.L9:
+ 238:./la/sump.cpp **** 		for(; i < sampler.GetBufferSize(); i += sampler.GetBytesPerTransfer())
+ 192              		.loc 1 238 0 discriminator 2
+ 193 00b0 4046     		mov	r0, r8
+ 194 00b2 FFF7FEFF 		bl	_ZN7Sampler13GetBufferSizeEv
+ 195              	.LVL31:
+ 196 00b6 A042     		cmp	r0, r4
+ 197 00b8 09D9     		bls	.L5
+ 198              		.loc 1 240 0 discriminator 1
+ 199 00ba 2878     		ldrb	r0, [r5]	@ zero_extendqisi2
+ 200 00bc 3B68     		ldr	r3, [r7]
+ 201 00be 9847     		blx	r3
+ 202              	.LVL32:
+ 241:./la/sump.cpp **** 			byteTXFunc(ptr[1]);
+ 203              		.loc 1 241 0 discriminator 1
+ 204 00c0 3B68     		ldr	r3, [r7]
+ 205 00c2 6878     		ldrb	r0, [r5, #1]	@ zero_extendqisi2
+ 206 00c4 9847     		blx	r3
+ 207              	.LVL33:
+ 242:./la/sump.cpp **** 			ptr -= sampler.GetBytesPerTransfer();
+ 208              		.loc 1 242 0 discriminator 1
+ 209 00c6 F368     		ldr	r3, [r6, #12]
+ 210 00c8 ED1A     		subs	r5, r5, r3
+ 211              	.LVL34:
+ 238:./la/sump.cpp **** 		{
+ 212              		.loc 1 238 0 discriminator 1
+ 213 00ca 1C44     		add	r4, r4, r3
+ 214              	.LVL35:
+ 215 00cc F0E7     		b	.L9
+ 216              	.LVL36:
+ 217              	.L5:
+ 218              	.LBE57:
+ 219              	.LBE56:
+ 220              	.LBE54:
+ 221              	.LBB58:
+ 222              	.LBB59:
+ 311:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h **** }
+ 223              		.loc 2 311 0
+ 224              		.syntax unified
+ 225              	@ 311 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmFunc.h" 1
+ 226 00ce 62B6     		cpsie i
+ 227              	@ 0 "" 2
+ 228              		.thumb
+ 229              		.syntax unified
+ 230              	.LBE59:
+ 231              	.LBE58:
+ 243:./la/sump.cpp **** 		}
+ 244:./la/sump.cpp **** 	}
+ 245:./la/sump.cpp **** 	__enable_irq();
+ 246:./la/sump.cpp **** }
+ 232              		.loc 1 246 0
+ 233 00d0 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 234              	.L11:
+ 235              		.align	2
+ 236              	.L10:
+ 237 00d4 00000000 		.word	sampler
+ 238 00d8 00000000 		.word	.LANCHOR0
+ 239              		.cfi_endproc
+ 240              	.LFE128:
+ 242              		.align	1
+ 243              		.syntax unified
+ 244              		.thumb
+ 245              		.thumb_func
+ 246              		.fpu fpv4-sp-d16
+ 248              	_ZL12DemoUSARTIrqv:
+ 249              	.LFB124:
+  89:./la/sump.cpp **** 	TIM2->SR &= ~TIM_SR_UIF;
+ 250              		.loc 1 89 0
+ 251              		.cfi_startproc
+ 252              		@ args = 0, pretend = 0, frame = 0
+ 253              		@ frame_needed = 0, uses_anonymous_args = 0
+ 254              		@ link register save eliminated.
+  90:./la/sump.cpp **** 	if(USART2->SR & USART_SR_TXE)
+ 255              		.loc 1 90 0
+ 256 00dc 4FF08042 		mov	r2, #1073741824
+ 257 00e0 138A     		ldrh	r3, [r2, #16]
+ 258 00e2 23F00103 		bic	r3, r3, #1
+ 259 00e6 1B04     		lsls	r3, r3, #16
+ 260 00e8 1B0C     		lsrs	r3, r3, #16
+ 261 00ea 1382     		strh	r3, [r2, #16]	@ movhi
+  91:./la/sump.cpp **** 		USART2->DR = num++;
+ 262              		.loc 1 91 0
+ 263 00ec 02F58842 		add	r2, r2, #17408
+ 264 00f0 1388     		ldrh	r3, [r2]
+ 265 00f2 1B06     		lsls	r3, r3, #24
+ 266 00f4 05D5     		bpl	.L12
+ 267              	.LBB62:
+ 268              	.LBB63:
+  92:./la/sump.cpp **** }
+ 269              		.loc 1 92 0
+ 270 00f6 0349     		ldr	r1, .L17
+ 271 00f8 0B79     		ldrb	r3, [r1, #4]	@ zero_extendqisi2
+ 272 00fa 581C     		adds	r0, r3, #1
+ 273 00fc 9BB2     		uxth	r3, r3
+ 274 00fe 0871     		strb	r0, [r1, #4]
+ 275 0100 9380     		strh	r3, [r2, #4]	@ movhi
+ 276              	.L12:
+ 277              	.LBE63:
+ 278              	.LBE62:
+  93:./la/sump.cpp **** 
+ 279              		.loc 1 93 0
+ 280 0102 7047     		bx	lr
+ 281              	.L18:
+ 282              		.align	2
+ 283              	.L17:
+ 284 0104 00000000 		.word	.LANCHOR0
+ 285              		.cfi_endproc
+ 286              	.LFE124:
+ 288              		.align	1
+ 289              		.global	SumpSetTXFunctions
+ 290              		.syntax unified
+ 291              		.thumb
+ 292              		.thumb_func
+ 293              		.fpu fpv4-sp-d16
+ 295              	SumpSetTXFunctions:
+ 296              	.LFB122:
+  35:./la/sump.cpp **** 	byteTXFunc = byteTX;
+ 297              		.loc 1 35 0
+ 298              		.cfi_startproc
+ 299              		@ args = 0, pretend = 0, frame = 0
+ 300              		@ frame_needed = 0, uses_anonymous_args = 0
+ 301              		@ link register save eliminated.
+ 302              	.LVL37:
+  36:./la/sump.cpp **** 	bufferTXFunc = bufferTX;
+ 303              		.loc 1 36 0
+ 304 0108 014B     		ldr	r3, .L20
+ 305 010a 1860     		str	r0, [r3]
+  37:./la/sump.cpp **** }
+ 306              		.loc 1 37 0
+ 307 010c 9960     		str	r1, [r3, #8]
+  38:./la/sump.cpp **** 
+ 308              		.loc 1 38 0
+ 309 010e 7047     		bx	lr
+ 310              	.L21:
+ 311              		.align	2
+ 312              	.L20:
+ 313 0110 00000000 		.word	.LANCHOR0
+ 314              		.cfi_endproc
+ 315              	.LFE122:
+ 317              		.align	1
+ 318              		.global	_Z14SetupDemoTimerv
+ 319              		.syntax unified
+ 320              		.thumb
+ 321              		.thumb_func
+ 322              		.fpu fpv4-sp-d16
+ 324              	_Z14SetupDemoTimerv:
+ 325              	.LFB123:
+  41:./la/sump.cpp **** 	USART_InitTypeDef USART_InitStructure;
+ 326              		.loc 1 41 0
+ 327              		.cfi_startproc
+ 328              		@ args = 0, pretend = 0, frame = 24
+ 329              		@ frame_needed = 0, uses_anonymous_args = 0
+ 330 0114 2DE9F043 		push	{r4, r5, r6, r7, r8, r9, lr}
+ 331              	.LCFI1:
+ 332              		.cfi_def_cfa_offset 28
+ 333              		.cfi_offset 4, -28
+ 334              		.cfi_offset 5, -24
+ 335              		.cfi_offset 6, -20
+ 336              		.cfi_offset 7, -16
+ 337              		.cfi_offset 8, -12
+ 338              		.cfi_offset 9, -8
+ 339              		.cfi_offset 14, -4
+  45:./la/sump.cpp **** 
+ 340              		.loc 1 45 0
+ 341 0118 0121     		movs	r1, #1
+  52:./la/sump.cpp **** 
+ 342              		.loc 1 52 0
+ 343 011a 374F     		ldr	r7, .L23
+  62:./la/sump.cpp **** 	USART_Cmd(USART2, ENABLE);
+ 344              		.loc 1 62 0
+ 345 011c 374C     		ldr	r4, .L23+4
+  41:./la/sump.cpp **** 	USART_InitTypeDef USART_InitStructure;
+ 346              		.loc 1 41 0
+ 347 011e 87B0     		sub	sp, sp, #28
+ 348              	.LCFI2:
+ 349              		.cfi_def_cfa_offset 56
+  45:./la/sump.cpp **** 
+ 350              		.loc 1 45 0
+ 351 0120 0846     		mov	r0, r1
+ 352 0122 FFF7FEFF 		bl	RCC_AHB1PeriphClockCmd
+ 353              	.LVL38:
+  51:./la/sump.cpp **** 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 354              		.loc 1 51 0
+ 355 0126 0126     		movs	r6, #1
+  47:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+ 356              		.loc 1 47 0
+ 357 0128 4FF00409 		mov	r9, #4
+  48:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+ 358              		.loc 1 48 0
+ 359 012c 0225     		movs	r5, #2
+  50:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+ 360              		.loc 1 50 0
+ 361 012e 4FF00008 		mov	r8, #0
+  49:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+ 362              		.loc 1 49 0
+ 363 0132 0323     		movs	r3, #3
+  52:./la/sump.cpp **** 
+ 364              		.loc 1 52 0
+ 365 0134 6946     		mov	r1, sp
+ 366 0136 3846     		mov	r0, r7
+  49:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+ 367              		.loc 1 49 0
+ 368 0138 8DF80530 		strb	r3, [sp, #5]
+  50:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+ 369              		.loc 1 50 0
+ 370 013c 8DF80680 		strb	r8, [sp, #6]
+  51:./la/sump.cpp **** 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+ 371              		.loc 1 51 0
+ 372 0140 8DF80760 		strb	r6, [sp, #7]
+  47:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+ 373              		.loc 1 47 0
+ 374 0144 CDF80090 		str	r9, [sp]
+  48:./la/sump.cpp **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+ 375              		.loc 1 48 0
+ 376 0148 8DF80450 		strb	r5, [sp, #4]
+  52:./la/sump.cpp **** 
+ 377              		.loc 1 52 0
+ 378 014c FFF7FEFF 		bl	GPIO_Init
+ 379              	.LVL39:
+  54:./la/sump.cpp **** 	USART_InitStructure.USART_BaudRate = 115200;
+ 380              		.loc 1 54 0
+ 381 0150 3146     		mov	r1, r6
+ 382 0152 4FF40030 		mov	r0, #131072
+ 383 0156 FFF7FEFF 		bl	RCC_APB1PeriphClockCmd
+ 384              	.LVL40:
+  55:./la/sump.cpp **** 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+ 385              		.loc 1 55 0
+ 386 015a 4FF4E133 		mov	r3, #115200
+ 387 015e CDE90238 		strd	r3, r8, [sp, #8]
+  62:./la/sump.cpp **** 	USART_Cmd(USART2, ENABLE);
+ 388              		.loc 1 62 0
+ 389 0162 02A9     		add	r1, sp, #8
+  57:./la/sump.cpp **** 	USART_InitStructure.USART_Parity = USART_Parity_No;
+ 390              		.loc 1 57 0
+ 391 0164 4FF44023 		mov	r3, #786432
+  62:./la/sump.cpp **** 	USART_Cmd(USART2, ENABLE);
+ 392              		.loc 1 62 0
+ 393 0168 2046     		mov	r0, r4
+  57:./la/sump.cpp **** 	USART_InitStructure.USART_Parity = USART_Parity_No;
+ 394              		.loc 1 57 0
+ 395 016a 0493     		str	r3, [sp, #16]
+  60:./la/sump.cpp **** 
+ 396              		.loc 1 60 0
+ 397 016c ADF81480 		strh	r8, [sp, #20]	@ movhi
+  62:./la/sump.cpp **** 	USART_Cmd(USART2, ENABLE);
+ 398              		.loc 1 62 0
+ 399 0170 FFF7FEFF 		bl	USART_Init
+ 400              	.LVL41:
+  63:./la/sump.cpp **** 	//USART2->CR1 = USART_cr1
+ 401              		.loc 1 63 0
+ 402 0174 3146     		mov	r1, r6
+ 403 0176 2046     		mov	r0, r4
+ 404 0178 FFF7FEFF 		bl	USART_Cmd
+ 405              	.LVL42:
+  68:./la/sump.cpp **** 	TIM2->ARR = 19999;
+ 406              		.loc 1 68 0
+ 407 017c 4FF08044 		mov	r4, #1073741824
+  67:./la/sump.cpp **** 	TIM2->CR1 = TIM_CR1_URS;
+ 408              		.loc 1 67 0
+ 409 0180 3146     		mov	r1, r6
+ 410 0182 3046     		mov	r0, r6
+ 411 0184 FFF7FEFF 		bl	RCC_APB1PeriphClockCmd
+ 412              	.LVL43:
+  69:./la/sump.cpp **** 	TIM2->PSC = 2;
+ 413              		.loc 1 69 0
+ 414 0188 44F61F63 		movw	r3, #19999
+  68:./la/sump.cpp **** 	TIM2->ARR = 19999;
+ 415              		.loc 1 68 0
+ 416 018c A4F80090 		strh	r9, [r4]	@ movhi
+  69:./la/sump.cpp **** 	TIM2->PSC = 2;
+ 417              		.loc 1 69 0
+ 418 0190 E362     		str	r3, [r4, #44]
+  73:./la/sump.cpp **** 	TIM2->CCR1 = 100;
+ 419              		.loc 1 73 0
+ 420 0192 6023     		movs	r3, #96
+  70:./la/sump.cpp **** 	TIM2->CR2 = 0;
+ 421              		.loc 1 70 0
+ 422 0194 2585     		strh	r5, [r4, #40]	@ movhi
+  71:./la/sump.cpp **** 	TIM2->DIER = TIM_DIER_UIE;
+ 423              		.loc 1 71 0
+ 424 0196 A4F80480 		strh	r8, [r4, #4]	@ movhi
+  72:./la/sump.cpp **** 	TIM2->CCMR1 = TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
+ 425              		.loc 1 72 0
+ 426 019a A681     		strh	r6, [r4, #12]	@ movhi
+  73:./la/sump.cpp **** 	TIM2->CCR1 = 100;
+ 427              		.loc 1 73 0
+ 428 019c 2383     		strh	r3, [r4, #24]	@ movhi
+  74:./la/sump.cpp **** 	TIM2->EGR = TIM_EGR_UG;
+ 429              		.loc 1 74 0
+ 430 019e 6423     		movs	r3, #100
+ 431 01a0 6363     		str	r3, [r4, #52]
+  75:./la/sump.cpp **** 	TIM2->CCER = TIM_CCER_CC1E;
+ 432              		.loc 1 75 0
+ 433 01a2 A682     		strh	r6, [r4, #20]	@ movhi
+  76:./la/sump.cpp **** 	TIM2->SR &= ~TIM_SR_UIF;
+ 434              		.loc 1 76 0
+ 435 01a4 2684     		strh	r6, [r4, #32]	@ movhi
+  77:./la/sump.cpp **** 	InterruptController::EnableChannel(TIM2_IRQn, 2, 0, DemoUSARTIrq);
+ 436              		.loc 1 77 0
+ 437 01a6 238A     		ldrh	r3, [r4, #16]
+ 438              	.LBB74:
+ 439              	.LBB75:
+ 440              	.LBB76:
+ 441              	.LBB77:
+ 442              		.file 3 "./nvic.h"
+   1:./nvic.h      **** /*
+   2:./nvic.h      ****  * nvic.h
+   3:./nvic.h      ****  *
+   4:./nvic.h      ****  *  Created on: 09.12.2009
+   5:./nvic.h      ****  *      Author: Flexz
+   6:./nvic.h      ****  */
+   7:./nvic.h      **** 
+   8:./nvic.h      **** #ifndef NVIC_H_
+   9:./nvic.h      **** #define NVIC_H_
+  10:./nvic.h      **** 
+  11:./nvic.h      **** //#include "stm32f10x.h"
+  12:./nvic.h      **** //#include "peripheral.h"
+  13:./nvic.h      **** #include <misc.h>
+  14:./nvic.h      **** 
+  15:./nvic.h      **** #define AIRCR_VECTKEY_MASK		((uint32_t)0x05FA0000)
+  16:./nvic.h      **** #define AIRCR_SYSRESETREQ		((uint32_t)0x00000004)
+  17:./nvic.h      **** 
+  18:./nvic.h      **** typedef void (*InterruptHandler)(void);
+  19:./nvic.h      **** 
+  20:./nvic.h      **** //Управление прерываниями: включение, выключение, настройка
+  21:./nvic.h      **** class InterruptController
+  22:./nvic.h      **** {
+  23:./nvic.h      **** public:
+  24:./nvic.h      **** 	//Включает прерывание
+  25:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel)
+  26:./nvic.h      **** 	{
+  27:./nvic.h      **** 	    /* Enable the Selected IRQ Channels --------------------------------------*/
+  28:./nvic.h      **** 	    NVIC->ISER[irqChannel >> 0x05] =
+  29:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+  30:./nvic.h      **** 	}
+  31:./nvic.h      **** 	//Включает прерывание и задает приоритет
+  32:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority)
+  33:./nvic.h      **** 	{
+  34:./nvic.h      **** 		SetChannelPriority(irqChannel, priority, subpriority);
+  35:./nvic.h      **** 	    EnableChannel(irqChannel);
+  36:./nvic.h      **** 	}
+  37:./nvic.h      **** 	//Включает прерывание, задает приоритет и устанавливает обрабочик
+  38:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority, InterruptHa
+  39:./nvic.h      **** 	{
+  40:./nvic.h      **** 		DisableChannel(irqChannel);
+  41:./nvic.h      **** 		SetHandler(irqChannel, handler);
+  42:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+  43:./nvic.h      **** 	}
+  44:./nvic.h      **** 	//Отключает прерывание
+  45:./nvic.h      **** 	static void DisableChannel(IRQn_Type irqChannel)
+  46:./nvic.h      **** 	{
+  47:./nvic.h      **** 	    NVIC->ICER[irqChannel >> 0x05] =
+ 443              		.loc 3 47 0
+ 444 01a8 154E     		ldr	r6, .L23+8
+ 445              	.LBE77:
+ 446              	.LBE76:
+  41:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+ 447              		.loc 3 41 0
+ 448 01aa 1649     		ldr	r1, .L23+12
+ 449              	.LBE75:
+ 450              	.LBE74:
+  77:./la/sump.cpp **** 	InterruptController::EnableChannel(TIM2_IRQn, 2, 0, DemoUSARTIrq);
+ 451              		.loc 1 77 0
+ 452 01ac 23F00103 		bic	r3, r3, #1
+ 453 01b0 1B04     		lsls	r3, r3, #16
+ 454 01b2 1B0C     		lsrs	r3, r3, #16
+ 455              	.LBB91:
+ 456              	.LBB88:
+ 457              	.LBB80:
+ 458              	.LBB78:
+ 459              		.loc 3 47 0
+ 460 01b4 4FF08058 		mov	r8, #268435456
+ 461              	.LBE78:
+ 462              	.LBE80:
+ 463              	.LBE88:
+ 464              	.LBE91:
+  77:./la/sump.cpp **** 	InterruptController::EnableChannel(TIM2_IRQn, 2, 0, DemoUSARTIrq);
+ 465              		.loc 1 77 0
+ 466 01b8 2382     		strh	r3, [r4, #16]	@ movhi
+ 467              	.LVL44:
+ 468              	.LBB92:
+ 469              	.LBB89:
+  41:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+ 470              		.loc 3 41 0
+ 471 01ba 1C20     		movs	r0, #28
+ 472              	.LBB81:
+ 473              	.LBB79:
+ 474              		.loc 3 47 0
+ 475 01bc C6F88080 		str	r8, [r6, #128]
+ 476              	.LVL45:
+ 477              	.LBE79:
+ 478              	.LBE81:
+  41:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+ 479              		.loc 3 41 0
+ 480 01c0 FFF7FEFF 		bl	_ZN19InterruptController10SetHandlerE4IRQnPFvvE
+ 481              	.LVL46:
+ 482              	.LBB82:
+ 483              	.LBB83:
+ 484              	.LBB84:
+  48:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+  49:./nvic.h      **** 	}
+  50:./nvic.h      **** 	static void SetChannelPriority(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority)
+  51:./nvic.h      **** 	{
+  52:./nvic.h      **** 	#ifdef STM32L1XX
+  53:./nvic.h      **** 		NVIC->IP[(uint32_t)(irqChannel)] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);
+  54:./nvic.h      **** 	#else
+  55:./nvic.h      **** 		uint32_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
+  56:./nvic.h      **** 		/* Compute the Corresponding IRQ Priority --------------------------------*/
+  57:./nvic.h      **** 		tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
+ 485              		.loc 3 57 0
+ 486 01c4 104B     		ldr	r3, .L23+16
+ 487 01c6 DB68     		ldr	r3, [r3, #12]
+ 488              	.LVL47:
+ 489 01c8 DB43     		mvns	r3, r3
+ 490              	.LVL48:
+ 491 01ca C3F30223 		ubfx	r3, r3, #8, #3
+ 492              	.LVL49:
+  58:./nvic.h      **** 		tmppre = (0x4 - tmppriority);
+ 493              		.loc 3 58 0
+ 494 01ce A9EB0303 		sub	r3, r9, r3
+ 495              	.LVL50:
+  59:./nvic.h      **** 		tmpsub = tmpsub >> tmppriority;
+  60:./nvic.h      **** 
+  61:./nvic.h      **** 		tmppriority = (uint32_t)priority << tmppre;
+ 496              		.loc 3 61 0
+ 497 01d2 05FA03F3 		lsl	r3, r5, r3
+ 498              	.LVL51:
+  62:./nvic.h      **** 		tmppriority |=  subpriority & tmpsub;
+  63:./nvic.h      **** 		tmppriority = tmppriority << 0x04;
+ 499              		.loc 3 63 0
+ 500 01d6 03FA09F3 		lsl	r3, r3, r9
+ 501              	.LVL52:
+  64:./nvic.h      **** 		NVIC->IP[irqChannel] = tmppriority;
+ 502              		.loc 3 64 0
+ 503 01da DBB2     		uxtb	r3, r3
+ 504              	.LVL53:
+ 505 01dc 86F81C33 		strb	r3, [r6, #796]
+ 506              	.LVL54:
+ 507              	.LBE84:
+ 508              	.LBE83:
+ 509              	.LBE82:
+ 510              	.LBE89:
+ 511              	.LBE92:
+  79:./la/sump.cpp **** 
+ 512              		.loc 1 79 0
+ 513 01e0 0523     		movs	r3, #5
+ 514              	.LBB93:
+ 515              	.LBB90:
+ 516              	.LBB87:
+ 517              	.LBB85:
+ 518              	.LBB86:
+  28:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+ 519              		.loc 3 28 0
+ 520 01e2 C6F80080 		str	r8, [r6]
+ 521              	.LVL55:
+ 522              	.LBE86:
+ 523              	.LBE85:
+ 524              	.LBE87:
+ 525              	.LBE90:
+ 526              	.LBE93:
+  83:./la/sump.cpp **** 	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
+ 527              		.loc 1 83 0
+ 528 01e6 0722     		movs	r2, #7
+  79:./la/sump.cpp **** 
+ 529              		.loc 1 79 0
+ 530 01e8 2380     		strh	r3, [r4]	@ movhi
+  83:./la/sump.cpp **** 	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
+ 531              		.loc 1 83 0
+ 532 01ea 2946     		mov	r1, r5
+ 533 01ec 3846     		mov	r0, r7
+ 534 01ee FFF7FEFF 		bl	GPIO_PinAFConfig
+ 535              	.LVL56:
+  85:./la/sump.cpp **** 
+ 536              		.loc 1 85 0
+ 537 01f2 07B0     		add	sp, sp, #28
+ 538              	.LCFI3:
+ 539              		.cfi_def_cfa_offset 28
+ 540              		@ sp needed
+ 541 01f4 BDE8F083 		pop	{r4, r5, r6, r7, r8, r9, pc}
+ 542              	.L24:
+ 543              		.align	2
+ 544              	.L23:
+ 545 01f8 00000240 		.word	1073872896
+ 546 01fc 00440040 		.word	1073759232
+ 547 0200 00E100E0 		.word	-536813312
+ 548 0204 00000000 		.word	_ZL12DemoUSARTIrqv
+ 549 0208 00ED00E0 		.word	-536810240
+ 550              		.cfi_endproc
+ 551              	.LFE123:
+ 553              		.align	1
+ 554              		.global	SumpIsShortCommand
+ 555              		.syntax unified
+ 556              		.thumb
+ 557              		.thumb_func
+ 558              		.fpu fpv4-sp-d16
+ 560              	SumpIsShortCommand:
+ 561              	.LFB125:
+  96:./la/sump.cpp **** 	switch(command)
+ 562              		.loc 1 96 0
+ 563              		.cfi_startproc
+ 564              		@ args = 0, pretend = 0, frame = 0
+ 565              		@ frame_needed = 0, uses_anonymous_args = 0
+ 566              		@ link register save eliminated.
+ 567              	.LVL57:
+ 568 020c 0428     		cmp	r0, #4
+ 569 020e 08D8     		bhi	.L27
+ 103:./la/sump.cpp **** 	default:
+ 570              		.loc 1 103 0
+ 571 0210 0123     		movs	r3, #1
+ 572 0212 03FA00F0 		lsl	r0, r3, r0
+ 573              	.LVL58:
+ 574 0216 10F0170F 		tst	r0, #23
+ 575 021a 14BF     		ite	ne
+ 576 021c 1846     		movne	r0, r3
+ 577 021e 0020     		moveq	r0, #0
+ 578 0220 7047     		bx	lr
+ 579              	.LVL59:
+ 580              	.L27:
+ 105:./la/sump.cpp **** 	}
+ 581              		.loc 1 105 0
+ 582 0222 0020     		movs	r0, #0
+ 583              	.LVL60:
+ 107:./la/sump.cpp **** 
+ 584              		.loc 1 107 0
+ 585 0224 7047     		bx	lr
+ 586              		.cfi_endproc
+ 587              	.LFE125:
+ 589              		.align	1
+ 590              		.global	_Z16CalcLocalDividermmm
+ 591              		.syntax unified
+ 592              		.thumb
+ 593              		.thumb_func
+ 594              		.fpu fpv4-sp-d16
+ 596              	_Z16CalcLocalDividermmm:
+ 597              	.LFB126:
+ 110:./la/sump.cpp **** 	return localFrequency / (sumpFrequency / (divider + 1)) - 1;
+ 598              		.loc 1 110 0
+ 599              		.cfi_startproc
+ 600              		@ args = 0, pretend = 0, frame = 0
+ 601              		@ frame_needed = 0, uses_anonymous_args = 0
+ 602              		@ link register save eliminated.
+ 603              	.LVL61:
+ 111:./la/sump.cpp **** }
+ 604              		.loc 1 111 0
+ 605 0226 0130     		adds	r0, r0, #1
+ 606              	.LVL62:
+ 607 0228 B2FBF0F0 		udiv	r0, r2, r0
+ 608              	.LVL63:
+ 609 022c B1FBF0F0 		udiv	r0, r1, r0
+ 112:./la/sump.cpp **** 
+ 610              		.loc 1 112 0
+ 611 0230 0138     		subs	r0, r0, #1
+ 612 0232 7047     		bx	lr
+ 613              		.cfi_endproc
+ 614              	.LFE126:
+ 616              		.align	1
+ 617              		.global	SumpProcessRequest
+ 618              		.syntax unified
+ 619              		.thumb
+ 620              		.thumb_func
+ 621              		.fpu fpv4-sp-d16
+ 623              	SumpProcessRequest:
+ 624              	.LFB127:
+ 121:./la/sump.cpp **** 	int result = 0;
+ 625              		.loc 1 121 0
+ 626              		.cfi_startproc
+ 627              		@ args = 0, pretend = 0, frame = 16
+ 628              		@ frame_needed = 0, uses_anonymous_args = 0
+ 629              	.LVL64:
+ 630 0234 1FB5     		push	{r0, r1, r2, r3, r4, lr}
+ 631              	.LCFI4:
+ 632              		.cfi_def_cfa_offset 24
+ 633              		.cfi_offset 4, -8
+ 634              		.cfi_offset 14, -4
+ 635              	.LBB94:
+ 123:./la/sump.cpp **** 	{
+ 636              		.loc 1 123 0
+ 637 0236 0478     		ldrb	r4, [r0]	@ zero_extendqisi2
+ 638 0238 802C     		cmp	r4, #128
+ 639 023a 39D0     		beq	.L31
+ 640 023c 08D8     		bhi	.L32
+ 641 023e 012C     		cmp	r4, #1
+ 642 0240 21D0     		beq	.L33
+ 643 0242 13D3     		bcc	.L34
+ 644 0244 022C     		cmp	r4, #2
+ 645 0246 28D0     		beq	.L35
+ 646 0248 042C     		cmp	r4, #4
+ 647 024a 2CD0     		beq	.L36
+ 648              	.L49:
+ 649              	.LBE94:
+ 122:./la/sump.cpp **** 	switch(buffer[0])
+ 650              		.loc 1 122 0
+ 651 024c 0020     		movs	r0, #0
+ 652              	.LVL65:
+ 205:./la/sump.cpp **** }
+ 653              		.loc 1 205 0
+ 654 024e 18E0     		b	.L29
+ 655              	.LVL66:
+ 656              	.L32:
+ 657              	.LBB119:
+ 123:./la/sump.cpp **** 	{
+ 658              		.loc 1 123 0
+ 659 0250 822C     		cmp	r4, #130
+ 660 0252 61D0     		beq	.L37
+ 661 0254 48D3     		bcc	.L38
+ 662 0256 C02C     		cmp	r4, #192
+ 663 0258 57D0     		beq	.L39
+ 664 025a C12C     		cmp	r4, #193
+ 665 025c F6D1     		bne	.L49
+ 666              	.LBB95:
+ 191:./la/sump.cpp **** 		{
+ 667              		.loc 1 191 0
+ 668 025e 0529     		cmp	r1, #5
+ 669 0260 F4D1     		bne	.L49
+ 670              	.LBB96:
+ 671              	.LBB97:
+ 672              		.file 4 "./la/la_sampling.h"
+   1:./la/la_sampling.h **** /*
+   2:./la/la_sampling.h ****  * la_sampling.h
+   3:./la/la_sampling.h ****  *
+   4:./la/la_sampling.h ****  *  Created on: 11.11.2012
+   5:./la/la_sampling.h ****  *      Author: user
+   6:./la/la_sampling.h ****  */
+   7:./la/la_sampling.h **** 
+   8:./la/la_sampling.h **** #ifndef LA_SAMPLING_H_
+   9:./la/la_sampling.h **** #define LA_SAMPLING_H_
+  10:./la/la_sampling.h **** 
+  11:./la/la_sampling.h **** #include "nvic.h"
+  12:./la/la_sampling.h **** 
+  13:./la/la_sampling.h **** #define MAX_SAMPLING_RAM (64*1024)
+  14:./la/la_sampling.h **** //#define MAX_RLE_SAMPLE_COUNT	(64)
+  15:./la/la_sampling.h **** #define MAX_RLE_SAMPLE_COUNT	(128)
+  16:./la/la_sampling.h **** //#define SAMPLING_FSMC
+  17:./la/la_sampling.h **** #define FSMC_ADDR (0x60000000)
+  18:./la/la_sampling.h **** //Port A: used for USB_FS, non-usable
+  19:./la/la_sampling.h **** //Port B: B2 is BOOT1 pin with 10k pull-up
+  20:./la/la_sampling.h **** //Port C: C0 nEnable of STMPS2141STR. C3 output form mic.
+  21:./la/la_sampling.h **** //Port D: D5 has pull-up and led, connected nFault of STMPS2141STR. D12-15 connected to color LEDs 
+  22:./la/la_sampling.h **** //Port E: E0,E1 - active low from LIS302DL, non-usable
+  23:./la/la_sampling.h **** #define SAMPLING_PORT GPIOC
+  24:./la/la_sampling.h **** //enable manual trigger by user-button
+  25:./la/la_sampling.h **** #define SAMPLING_MANUAL
+  26:./la/la_sampling.h **** //RLE mode only Enable forcing highest sampled bit to output zero. If disabled - this bit has to be
+  27:./la/la_sampling.h **** //zeroed by interrupt handler stealing some cpu cycles.
+  28:./la/la_sampling.h **** //#define SAMPLING_RLE_FORCE_ZERO_ON_MSB
+  29:./la/la_sampling.h **** 
+  30:./la/la_sampling.h **** class Sampler
+  31:./la/la_sampling.h **** {
+  32:./la/la_sampling.h **** private:
+  33:./la/la_sampling.h **** 	uint32_t triggerMask;
+  34:./la/la_sampling.h **** 	uint32_t triggerValue;
+  35:./la/la_sampling.h **** 	uint16_t flags;
+  36:./la/la_sampling.h **** 	uint16_t period;
+  37:./la/la_sampling.h **** 
+  38:./la/la_sampling.h **** 	int transferSize;
+  39:./la/la_sampling.h **** 
+  40:./la/la_sampling.h **** 	void SetupRegular();
+  41:./la/la_sampling.h **** 	void SetupRLE();
+  42:./la/la_sampling.h **** 
+  43:./la/la_sampling.h **** 	void SetupRegularEXTITrigger(InterruptHandler interruptHandler);
+  44:./la/la_sampling.h **** 	//Enables TIM1 for triggering DMA with desired sampling frequency
+  45:./la/la_sampling.h **** 	void SetupSamplingTimer();
+  46:./la/la_sampling.h **** 	void SetupDelayTimer();
+  47:./la/la_sampling.h **** 	//
+  48:./la/la_sampling.h **** 	void SetupSamplingDMA(void *dataBuffer, uint32_t dataTransferCount);
+  49:./la/la_sampling.h **** 	void SetupRLESamplingDMA(void *dataBufferA, void *dataBufferB, uint32_t dataTransferCount);
+  50:./la/la_sampling.h **** 	uint32_t CalcDMATransferSize();
+  51:./la/la_sampling.h **** 
+  52:./la/la_sampling.h **** 	uint32_t ActualTransferCount();
+  53:./la/la_sampling.h **** public:
+  54:./la/la_sampling.h **** 	void SetBufferSize(uint32_t value);//{transferCount = value;}
+  55:./la/la_sampling.h **** 	void SetDelayCount(uint32_t value);//{delayCount = value;}
+  56:./la/la_sampling.h **** 	void SetTriggerMask(uint32_t value){triggerMask = value;}
+  57:./la/la_sampling.h **** 	void SetTriggerValue(uint32_t value){triggerValue = value;}
+ 673              		.loc 4 57 0
+ 674 0262 314B     		ldr	r3, .L58
+ 675              	.LBE97:
+ 676              	.LBE96:
+ 193:./la/sump.cpp **** 			result = 1;
+ 677              		.loc 1 193 0
+ 678 0264 D0F80120 		ldr	r2, [r0, #1]
+ 679              	.LVL67:
+ 680              	.LBB99:
+ 681              	.LBB98:
+ 682              		.loc 4 57 0
+ 683 0268 5A60     		str	r2, [r3, #4]
+ 684              	.LVL68:
+ 685 026a 09E0     		b	.L56
+ 686              	.LVL69:
+ 687              	.L34:
+ 688              	.LBE98:
+ 689              	.LBE99:
+ 126:./la/sump.cpp **** 		{
+ 690              		.loc 1 126 0
+ 691 026c 2F4C     		ldr	r4, .L58+4
+ 692 026e 2368     		ldr	r3, [r4]
+ 693 0270 1BB1     		cbz	r3, .L41
+ 128:./la/sump.cpp **** 			startup = 0;
+ 694              		.loc 1 128 0
+ 695 0272 FFF7FEFF 		bl	_Z14SetupDemoTimerv
+ 696              	.LVL70:
+ 129:./la/sump.cpp **** 		}
+ 697              		.loc 1 129 0
+ 698 0276 0023     		movs	r3, #0
+ 699 0278 2360     		str	r3, [r4]
+ 700              	.L41:
+ 132:./la/sump.cpp **** 	    result = 1;
+ 701              		.loc 1 132 0
+ 702 027a 2B48     		ldr	r0, .L58
+ 703 027c FFF7FEFF 		bl	_ZN7Sampler4StopEv
+ 704              	.LVL71:
+ 705              	.L56:
+ 201:./la/sump.cpp **** 		}
+ 706              		.loc 1 201 0
+ 707 0280 0120     		movs	r0, #1
+ 708              	.LVL72:
+ 709              	.L29:
+ 710              	.LBE95:
+ 711              	.LBE119:
+ 206:./la/sump.cpp **** 
+ 712              		.loc 1 206 0
+ 713 0282 04B0     		add	sp, sp, #16
+ 714              	.LCFI5:
+ 715              		.cfi_remember_state
+ 716              		.cfi_def_cfa_offset 8
+ 717              		@ sp needed
+ 718 0284 10BD     		pop	{r4, pc}
+ 719              	.LVL73:
+ 720              	.L33:
+ 721              	.LCFI6:
+ 722              		.cfi_restore_state
+ 723              	.LBB120:
+ 724              	.LBB118:
+ 136:./la/sump.cpp **** 		sampler.Start();
+ 725              		.loc 1 136 0
+ 726 0286 FFF7FEFF 		bl	_Z19SamplingClearBufferv
+ 727              	.LVL74:
+ 137:./la/sump.cpp **** 		sampler.Arm(SamplingComplete);
+ 728              		.loc 1 137 0
+ 729 028a 2748     		ldr	r0, .L58
+ 730 028c FFF7FEFF 		bl	_ZN7Sampler5StartEv
+ 731              	.LVL75:
+ 138:./la/sump.cpp **** 		result = 1;
+ 732              		.loc 1 138 0
+ 733 0290 2749     		ldr	r1, .L58+8
+ 734 0292 2548     		ldr	r0, .L58
+ 735 0294 FFF7FEFF 		bl	_ZN7Sampler3ArmEPFvvE
+ 736              	.LVL76:
+ 737 0298 F2E7     		b	.L56
+ 738              	.LVL77:
+ 739              	.L35:
+ 143:./la/sump.cpp **** 		result = 1;
+ 740              		.loc 1 143 0
+ 741 029a 264B     		ldr	r3, .L58+12
+ 742 029c 2648     		ldr	r0, .L58+16
+ 743              	.LVL78:
+ 744 029e 9B68     		ldr	r3, [r3, #8]
+ 745 02a0 0421     		movs	r1, #4
+ 746              	.LVL79:
+ 747              	.L57:
+ 148:./la/sump.cpp **** 		result = 1;
+ 748              		.loc 1 148 0
+ 749 02a2 9847     		blx	r3
+ 750              	.LVL80:
+ 751 02a4 ECE7     		b	.L56
+ 752              	.LVL81:
+ 753              	.L36:
+ 754 02a6 234B     		ldr	r3, .L58+12
+ 755 02a8 2448     		ldr	r0, .L58+20
+ 756              	.LVL82:
+ 757 02aa 9B68     		ldr	r3, [r3, #8]
+ 758 02ac 3521     		movs	r1, #53
+ 759              	.LVL83:
+ 760 02ae F8E7     		b	.L57
+ 761              	.LVL84:
+ 762              	.L31:
+ 763              	.LBB100:
+ 152:./la/sump.cpp **** 		{
+ 764              		.loc 1 152 0
+ 765 02b0 0529     		cmp	r1, #5
+ 766 02b2 CBD1     		bne	.L49
+ 767              	.LBB101:
+ 155:./la/sump.cpp **** 			//if maximum samplerate is 20MHz => 100/20 = 5, 5 - 1 = 4
+ 768              		.loc 1 155 0
+ 769 02b4 D0F80130 		ldr	r3, [r0, #1]
+ 770 02b8 1C4C     		ldr	r4, .L58+4
+ 771 02ba 6360     		str	r3, [r4, #4]
+ 772              	.LBB102:
+ 157:./la/sump.cpp **** 			{
+ 773              		.loc 1 157 0
+ 774 02bc 63B1     		cbz	r3, .L42
+ 775              	.LBB103:
+ 160:./la/sump.cpp **** 				divider = CalcLocalDivider(divider, clocks.SYSCLK_Frequency, SUMP_ORIGINAL_FREQ);
+ 776              		.loc 1 160 0
+ 777 02be 6846     		mov	r0, sp
+ 778              	.LVL85:
+ 779 02c0 FFF7FEFF 		bl	RCC_GetClocksFreq
+ 780              	.LVL86:
+ 781              	.LBB104:
+ 782              	.LBB105:
+ 111:./la/sump.cpp **** }
+ 783              		.loc 1 111 0
+ 784 02c4 6368     		ldr	r3, [r4, #4]
+ 785 02c6 5A1C     		adds	r2, r3, #1
+ 786 02c8 1D4B     		ldr	r3, .L58+24
+ 787 02ca B3FBF2F2 		udiv	r2, r3, r2
+ 788 02ce 009B     		ldr	r3, [sp]
+ 789 02d0 B3FBF2F3 		udiv	r3, r3, r2
+ 790 02d4 013B     		subs	r3, r3, #1
+ 791              	.LBE105:
+ 792              	.LBE104:
+ 161:./la/sump.cpp **** 			}
+ 793              		.loc 1 161 0
+ 794 02d6 6360     		str	r3, [r4, #4]
+ 795              	.L42:
+ 796              	.LBE103:
+ 797              	.LBE102:
+ 163:./la/sump.cpp **** 			{
+ 798              		.loc 1 163 0
+ 799 02d8 6368     		ldr	r3, [r4, #4]
+ 800 02da 0BB9     		cbnz	r3, .L43
+ 165:./la/sump.cpp **** 			}
+ 801              		.loc 1 165 0
+ 802 02dc 0123     		movs	r3, #1
+ 803 02de 6360     		str	r3, [r4, #4]
+ 804              	.L43:
+ 805              	.LVL87:
+ 806              	.LBB106:
+ 807              	.LBB107:
+  58:./la/la_sampling.h **** 	void SetFlags(uint32_t value){flags = value;}
+  59:./la/la_sampling.h **** 	void SetSamplingPeriod(uint32_t value){period = value;}
+ 808              		.loc 4 59 0
+ 809 02e0 114B     		ldr	r3, .L58
+ 810 02e2 6268     		ldr	r2, [r4, #4]
+ 811 02e4 5A81     		strh	r2, [r3, #10]	@ movhi
+ 812              	.LVL88:
+ 813 02e6 CBE7     		b	.L56
+ 814              	.LVL89:
+ 815              	.L38:
+ 816              	.LBE107:
+ 817              	.LBE106:
+ 818              	.LBE101:
+ 819              	.LBE100:
+ 820              	.LBB108:
+ 173:./la/sump.cpp **** 		{
+ 821              		.loc 1 173 0
+ 822 02e8 0529     		cmp	r1, #5
+ 823 02ea AFD1     		bne	.L49
+ 824              	.LVL90:
+ 825              	.LBB109:
+ 175:./la/sump.cpp **** 			uint16_t delayCount = *((uint16_t*)(buffer+3));
+ 826              		.loc 1 175 0
+ 827 02ec B0F80110 		ldrh	r1, [r0, #1]
+ 828              	.LVL91:
+ 176:./la/sump.cpp **** 			sampler.SetBufferSize(4*readCount);
+ 829              		.loc 1 176 0
+ 830 02f0 B0F80340 		ldrh	r4, [r0, #3]
+ 831              	.LVL92:
+ 177:./la/sump.cpp **** 			sampler.SetDelayCount(4*delayCount);
+ 832              		.loc 1 177 0
+ 833 02f4 0C48     		ldr	r0, .L58
+ 834              	.LVL93:
+ 175:./la/sump.cpp **** 			uint16_t delayCount = *((uint16_t*)(buffer+3));
+ 835              		.loc 1 175 0
+ 836 02f6 0131     		adds	r1, r1, #1
+ 837              	.LVL94:
+ 177:./la/sump.cpp **** 			sampler.SetDelayCount(4*delayCount);
+ 838              		.loc 1 177 0
+ 839 02f8 89B2     		uxth	r1, r1
+ 840              	.LVL95:
+ 841 02fa 8900     		lsls	r1, r1, #2
+ 842 02fc FFF7FEFF 		bl	_ZN7Sampler13SetBufferSizeEm
+ 843              	.LVL96:
+ 178:./la/sump.cpp **** 			result = 1;
+ 844              		.loc 1 178 0
+ 845 0300 A100     		lsls	r1, r4, #2
+ 846 0302 0948     		ldr	r0, .L58
+ 847 0304 FFF7FEFF 		bl	_ZN7Sampler13SetDelayCountEm
+ 848              	.LVL97:
+ 849 0308 BAE7     		b	.L56
+ 850              	.LVL98:
+ 851              	.L39:
+ 852              	.LBE109:
+ 853              	.LBE108:
+ 184:./la/sump.cpp **** 		{
+ 854              		.loc 1 184 0
+ 855 030a 0529     		cmp	r1, #5
+ 856 030c 9ED1     		bne	.L49
+ 857              	.LBB110:
+ 858              	.LBB111:
+  56:./la/la_sampling.h **** 	void SetTriggerValue(uint32_t value){triggerValue = value;}
+ 859              		.loc 4 56 0
+ 860 030e 064B     		ldr	r3, .L58
+ 861              	.LBE111:
+ 862              	.LBE110:
+ 186:./la/sump.cpp **** 			result = 1;
+ 863              		.loc 1 186 0
+ 864 0310 D0F80120 		ldr	r2, [r0, #1]
+ 865              	.LVL99:
+ 866              	.LBB113:
+ 867              	.LBB112:
+  56:./la/la_sampling.h **** 	void SetTriggerValue(uint32_t value){triggerValue = value;}
+ 868              		.loc 4 56 0
+ 869 0314 1A60     		str	r2, [r3]
+ 870              	.LVL100:
+ 871 0316 B3E7     		b	.L56
+ 872              	.LVL101:
+ 873              	.L37:
+ 874              	.LBE112:
+ 875              	.LBE113:
+ 198:./la/sump.cpp **** 		{
+ 876              		.loc 1 198 0
+ 877 0318 0529     		cmp	r1, #5
+ 878 031a 97D1     		bne	.L49
+ 879              	.LBB114:
+ 880              	.LBB115:
+  58:./la/la_sampling.h **** 	void SetSamplingPeriod(uint32_t value){period = value;}
+ 881              		.loc 4 58 0
+ 882 031c 024B     		ldr	r3, .L58
+ 883              	.LBE115:
+ 884              	.LBE114:
+ 200:./la/sump.cpp **** 			result = 1;
+ 885              		.loc 1 200 0
+ 886 031e B0F80120 		ldrh	r2, [r0, #1]
+ 887              	.LVL102:
+ 888              	.LBB117:
+ 889              	.LBB116:
+  58:./la/la_sampling.h **** 	void SetSamplingPeriod(uint32_t value){period = value;}
+ 890              		.loc 4 58 0
+ 891 0322 1A81     		strh	r2, [r3, #8]	@ movhi
+ 892 0324 ACE7     		b	.L56
+ 893              	.L59:
+ 894 0326 00BF     		.align	2
+ 895              	.L58:
+ 896 0328 00000000 		.word	sampler
+ 897 032c 00000000 		.word	.LANCHOR1
+ 898 0330 00000000 		.word	_ZL16SamplingCompletev
+ 899 0334 00000000 		.word	.LANCHOR0
+ 900 0338 00000000 		.word	.LC0
+ 901 033c 00000000 		.word	.LANCHOR2
+ 902 0340 00E1F505 		.word	100000000
+ 903              	.LBE116:
+ 904              	.LBE117:
+ 905              	.LBE118:
+ 906              	.LBE120:
+ 907              		.cfi_endproc
+ 908              	.LFE127:
+ 910              		.data
+ 911              		.align	2
+ 912              		.set	.LANCHOR1,. + 0
+ 915              	_ZL7startup:
+ 916 0000 01000000 		.word	1
+ 919              	_ZL7divider:
+ 920 0004 01000000 		.word	1
+ 921              		.bss
+ 922              		.align	2
+ 923              		.set	.LANCHOR0,. + 0
+ 926              	_ZL10byteTXFunc:
+ 927 0000 00000000 		.space	4
+ 930              	_ZL3num:
+ 931 0004 00       		.space	1
+ 932 0005 000000   		.space	3
+ 935              	_ZL12bufferTXFunc:
+ 936 0008 00000000 		.space	4
+ 937              		.section	.ahbram_data,"aw",%progbits
+ 938              		.set	.LANCHOR2,. + 0
+ 941              	_ZL8metaData:
+ 942 0000 01       		.byte	1
+ 943 0001 4C       		.byte	76
+ 944 0002 6F       		.byte	111
+ 945 0003 67       		.byte	103
+ 946 0004 69       		.byte	105
+ 947 0005 63       		.byte	99
+ 948 0006 20       		.byte	32
+ 949 0007 61       		.byte	97
+ 950 0008 6E       		.byte	110
+ 951 0009 61       		.byte	97
+ 952 000a 6C       		.byte	108
+ 953 000b 79       		.byte	121
+ 954 000c 7A       		.byte	122
+ 955 000d 65       		.byte	101
+ 956 000e 72       		.byte	114
+ 957 000f 00       		.byte	0
+ 958 0010 02       		.byte	2
+ 959 0011 4E       		.byte	78
+ 960 0012 6F       		.byte	111
+ 961 0013 46       		.byte	70
+ 962 0014 50       		.byte	80
+ 963 0015 47       		.byte	71
+ 964 0016 41       		.byte	65
+ 965 0017 20       		.byte	32
+ 966 0018 3A       		.byte	58
+ 967 0019 28       		.byte	40
+ 968 001a 00       		.byte	0
+ 969 001b 03       		.byte	3
+ 970 001c 56       		.byte	86
+ 971 001d 65       		.byte	101
+ 972 001e 72       		.byte	114
+ 973 001f 79       		.byte	121
+ 974 0020 20       		.byte	32
+ 975 0021 62       		.byte	98
+ 976 0022 65       		.byte	101
+ 977 0023 74       		.byte	116
+ 978 0024 61       		.byte	97
+ 979 0025 00       		.byte	0
+ 980 0026 23       		.byte	35
+ 981 0027 01       		.byte	1
+ 982 0028 31       		.byte	49
+ 983 0029 2D       		.byte	45
+ 984 002a 00       		.byte	0
+ 985 002b 21       		.byte	33
+ 986 002c 00       		.byte	0
+ 987 002d 00       		.byte	0
+ 988 002e 00       		.byte	0
+ 989 002f 00       		.byte	0
+ 990 0030 40       		.byte	64
+ 991 0031 08       		.byte	8
+ 992 0032 41       		.byte	65
+ 993 0033 02       		.byte	2
+ 994 0034 00       		.byte	0
+ 995              		.section	.rodata.str1.1,"aMS",%progbits,1
+ 996              	.LC0:
+ 997 0000 31414C53 		.ascii	"1ALS\000"
+ 997      00
+ 998              		.text
+ 999              	.Letext0:
+ 1000              		.file 5 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 1001              		.file 6 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 1002              		.file 7 "./la/sump.h"
+ 1003              		.file 8 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 1004              		.file 9 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 1005              		.file 10 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Includ
+ 1006              		.file 11 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/s
+ 1007              		.file 12 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/s
+ 1008              		.file 13 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/s
+ 1009              		.file 14 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_core.
+ 1010              		.file 15 "./usb/vcp/usbd_cdc_core.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 sump.cpp
+     /tmp/cc0eAP5u.s:16     .text:0000000000000000 $t
+     /tmp/cc0eAP5u.s:22     .text:0000000000000000 _ZL16SamplingCompletev
+     /tmp/cc0eAP5u.s:237    .text:00000000000000d4 $d
+     /tmp/cc0eAP5u.s:242    .text:00000000000000dc $t
+     /tmp/cc0eAP5u.s:248    .text:00000000000000dc _ZL12DemoUSARTIrqv
+     /tmp/cc0eAP5u.s:284    .text:0000000000000104 $d
+     /tmp/cc0eAP5u.s:288    .text:0000000000000108 $t
+     /tmp/cc0eAP5u.s:295    .text:0000000000000108 SumpSetTXFunctions
+     /tmp/cc0eAP5u.s:313    .text:0000000000000110 $d
+     /tmp/cc0eAP5u.s:317    .text:0000000000000114 $t
+     /tmp/cc0eAP5u.s:324    .text:0000000000000114 _Z14SetupDemoTimerv
+     /tmp/cc0eAP5u.s:545    .text:00000000000001f8 $d
+     /tmp/cc0eAP5u.s:553    .text:000000000000020c $t
+     /tmp/cc0eAP5u.s:560    .text:000000000000020c SumpIsShortCommand
+     /tmp/cc0eAP5u.s:596    .text:0000000000000226 _Z16CalcLocalDividermmm
+     /tmp/cc0eAP5u.s:623    .text:0000000000000234 SumpProcessRequest
+     /tmp/cc0eAP5u.s:896    .text:0000000000000328 $d
+     /tmp/cc0eAP5u.s:911    .data:0000000000000000 $d
+     /tmp/cc0eAP5u.s:915    .data:0000000000000000 _ZL7startup
+     /tmp/cc0eAP5u.s:919    .data:0000000000000004 _ZL7divider
+     /tmp/cc0eAP5u.s:922    .bss:0000000000000000 $d
+     /tmp/cc0eAP5u.s:926    .bss:0000000000000000 _ZL10byteTXFunc
+     /tmp/cc0eAP5u.s:930    .bss:0000000000000004 _ZL3num
+     /tmp/cc0eAP5u.s:935    .bss:0000000000000008 _ZL12bufferTXFunc
+     /tmp/cc0eAP5u.s:941    .ahbram_data:0000000000000000 _ZL8metaData
+
+UNDEFINED SYMBOLS
+_ZN7Sampler13GetBufferTailEv
+_ZN7Sampler17GetBufferTailSizeEv
+_ZN7Sampler9GetBufferEv
+_ZN7Sampler13GetBufferSizeEv
+sampler
+RCC_AHB1PeriphClockCmd
+GPIO_Init
+RCC_APB1PeriphClockCmd
+USART_Init
+USART_Cmd
+_ZN19InterruptController10SetHandlerE4IRQnPFvvE
+GPIO_PinAFConfig
+_ZN7Sampler4StopEv
+_Z19SamplingClearBufferv
+_ZN7Sampler5StartEv
+_ZN7Sampler3ArmEPFvvE
+RCC_GetClocksFreq
+_ZN7Sampler13SetBufferSizeEm
+_ZN7Sampler13SetDelayCountEm

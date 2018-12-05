@@ -1,0 +1,3619 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"la_sampling.cpp"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.syntax unified
+  18              		.thumb
+  19              		.thumb_func
+  20              		.fpu fpv4-sp-d16
+  22              	_ZL21SamplingFrameCompeltev:
+  23              	.LFB148:
+  24              		.file 1 "./la/la_sampling.cpp"
+   1:./la/la_sampling.cpp **** /*
+   2:./la/la_sampling.cpp ****  * la_sampling.cpp
+   3:./la/la_sampling.cpp ****  *
+   4:./la/la_sampling.cpp ****  *  Created on: 11.11.2012
+   5:./la/la_sampling.cpp ****  *      Author: user
+   6:./la/la_sampling.cpp ****  */
+   7:./la/la_sampling.cpp **** 
+   8:./la/la_sampling.cpp **** #include "la_sampling.h"
+   9:./la/la_sampling.cpp **** #include <stm32f4xx.h>
+  10:./la/la_sampling.cpp **** #include "nvic.h"
+  11:./la/la_sampling.cpp **** #include <stdlib.h>
+  12:./la/la_sampling.cpp **** #include "sump.h"
+  13:./la/la_sampling.cpp **** 
+  14:./la/la_sampling.cpp **** Sampler sampler;
+  15:./la/la_sampling.cpp **** 
+  16:./la/la_sampling.cpp **** static uint32_t transferCount;
+  17:./la/la_sampling.cpp **** static uint32_t delayCount;
+  18:./la/la_sampling.cpp **** 
+  19:./la/la_sampling.cpp **** static void SamplingFrameCompelte();
+  20:./la/la_sampling.cpp **** static void SamplingExternalEventInterrupt();
+  21:./la/la_sampling.cpp **** static void SamplingRLEExternalEventInterrupt();
+  22:./la/la_sampling.cpp **** static void SamplingManualStart();
+  23:./la/la_sampling.cpp **** 
+  24:./la/la_sampling.cpp **** template <class samplesType, uint32_t FLAG, uint32_t MAX_COUNT>
+  25:./la/la_sampling.cpp **** static void SamplingRLEFrameInterrupt() __attribute__ ( ( isr ) ) ;//__attribute__ ( ( isr ) ) ;
+  26:./la/la_sampling.cpp **** 
+  27:./la/la_sampling.cpp **** template <class samplesType, uint32_t FLAG, uint32_t MAX_COUNT>
+  28:./la/la_sampling.cpp **** static void SamplingRLETailFrameInterrupt() __attribute__ ( ( isr ) ) ;// __attribute__ ( ( isr, na
+  29:./la/la_sampling.cpp **** 
+  30:./la/la_sampling.cpp **** static InterruptHandler samplingManualToExternalTransit = NULL;
+  31:./la/la_sampling.cpp **** static InterruptHandler samplingRLETailFrameInterrupt = NULL;
+  32:./la/la_sampling.cpp **** static InterruptHandler comletionHandler = NULL;
+  33:./la/la_sampling.cpp **** uint32_t _AHBBSS samplingRam[MAX_SAMPLING_RAM/4];
+  34:./la/la_sampling.cpp **** uint32_t _AHBBSS rleTempSamplingRamA[MAX_RLE_SAMPLE_COUNT];
+  35:./la/la_sampling.cpp **** uint32_t _AHBBSS rleTempSamplingRamB[MAX_RLE_SAMPLE_COUNT];
+  36:./la/la_sampling.cpp **** 
+  37:./la/la_sampling.cpp **** static uint32_t rlePtr;
+  38:./la/la_sampling.cpp **** static uint32_t rleValue;
+  39:./la/la_sampling.cpp **** static uint32_t rleRepeatCount;
+  40:./la/la_sampling.cpp **** static int rleDelayCount;
+  41:./la/la_sampling.cpp **** static bool rleTailSampling;
+  42:./la/la_sampling.cpp **** 
+  43:./la/la_sampling.cpp **** #define RLE_16BIT_FLAG 0x8000
+  44:./la/la_sampling.cpp **** #define RLE_8BIT_FLAG 0x80
+  45:./la/la_sampling.cpp **** 
+  46:./la/la_sampling.cpp **** #define RLE_16BIT_MAX_COUNT 0x7fff
+  47:./la/la_sampling.cpp **** #define RLE_8BIT_MAX_COUNT 0x7f
+  48:./la/la_sampling.cpp **** 
+  49:./la/la_sampling.cpp **** void Sampler::SetBufferSize(uint32_t value)
+  50:./la/la_sampling.cpp **** {
+  51:./la/la_sampling.cpp **** 	transferCount = value;
+  52:./la/la_sampling.cpp **** }
+  53:./la/la_sampling.cpp **** void Sampler::SetDelayCount(uint32_t value)
+  54:./la/la_sampling.cpp **** {
+  55:./la/la_sampling.cpp **** 	delayCount = value & 0xfffffffe;
+  56:./la/la_sampling.cpp **** 	rleDelayCount = value & 0xfffffffe;
+  57:./la/la_sampling.cpp **** }
+  58:./la/la_sampling.cpp **** 
+  59:./la/la_sampling.cpp **** void Sampler::SetupSamplingTimer()
+  60:./la/la_sampling.cpp **** {
+  61:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM1EN, ENABLE);
+  62:./la/la_sampling.cpp **** 	//Main sampling timer
+  63:./la/la_sampling.cpp **** 	TIM1->DIER = 0;
+  64:./la/la_sampling.cpp **** 	TIM1->SR &= ~TIM_SR_UIF;
+  65:./la/la_sampling.cpp **** 	TIM1->CNT = 0;
+  66:./la/la_sampling.cpp **** 	TIM1->PSC = 0;
+  67:./la/la_sampling.cpp **** 	TIM1->CR1 = TIM_CR1_URS;
+  68:./la/la_sampling.cpp **** 	TIM1->ARR = period;//actual period is +1 of this value
+  69:./la/la_sampling.cpp **** 	TIM1->CR2 = 0;
+  70:./la/la_sampling.cpp **** 	TIM1->DIER = TIM_DIER_UDE;
+  71:./la/la_sampling.cpp **** 	TIM1->EGR = TIM_EGR_UG;
+  72:./la/la_sampling.cpp **** }
+  73:./la/la_sampling.cpp **** 
+  74:./la/la_sampling.cpp **** uint32_t Sampler::CalcDMATransferSize()
+  75:./la/la_sampling.cpp **** {
+  76:./la/la_sampling.cpp **** 	uint32_t dmaSize = 0;
+  77:./la/la_sampling.cpp **** 	//handle 8/16/32 bit samplings
+  78:./la/la_sampling.cpp **** 	switch(flags & SUMP_FLAG1_GROUPS)
+  79:./la/la_sampling.cpp **** 	{
+  80:./la/la_sampling.cpp **** 	case SUMP_FLAG1_GR_16BIT:
+  81:./la/la_sampling.cpp **** 		transferSize = 2;
+  82:./la/la_sampling.cpp **** 		dmaSize = DMA_SxCR_MSIZE_0 | DMA_SxCR_PSIZE_0;
+  83:./la/la_sampling.cpp **** 		break;
+  84:./la/la_sampling.cpp **** 	case SUMP_FLAG1_GR_32BIT:
+  85:./la/la_sampling.cpp **** 		transferSize = 4;
+  86:./la/la_sampling.cpp **** 		dmaSize = DMA_SxCR_MSIZE_1 | DMA_SxCR_PSIZE_1;
+  87:./la/la_sampling.cpp **** 		break;
+  88:./la/la_sampling.cpp **** 	case SUMP_FLAG1_GR_8BIT:
+  89:./la/la_sampling.cpp **** 	default:
+  90:./la/la_sampling.cpp **** 		dmaSize = 0;
+  91:./la/la_sampling.cpp **** 		transferSize = 1;
+  92:./la/la_sampling.cpp **** 		break;
+  93:./la/la_sampling.cpp **** 	}
+  94:./la/la_sampling.cpp **** 	return dmaSize;
+  95:./la/la_sampling.cpp **** }
+  96:./la/la_sampling.cpp **** 
+  97:./la/la_sampling.cpp **** void Sampler::SetupSamplingDMA(void *dataBuffer, uint32_t dataTransferCount)
+  98:./la/la_sampling.cpp **** {
+  99:./la/la_sampling.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1ENR_DMA2EN, ENABLE);
+ 100:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 101:./la/la_sampling.cpp **** 
+ 102:./la/la_sampling.cpp **** 	//TIM8->DIER = 0;
+ 103:./la/la_sampling.cpp **** 	//TIM8->SR &= ~TIM_SR_UIF;
+ 104:./la/la_sampling.cpp **** 
+ 105:./la/la_sampling.cpp **** 	//TIM1_UP -> DMA2, Ch6, Stream5
+ 106:./la/la_sampling.cpp **** 	//DMA should be stopped before this point
+ 107:./la/la_sampling.cpp **** 	DMA2_Stream5->CR = (DMA_SxCR_CHSEL_1 | DMA_SxCR_CHSEL_2) | dmaSize | DMA_SxCR_MINC | DMA_SxCR_CIRC
+ 108:./la/la_sampling.cpp **** 	//DMA2_Stream5->CR = D<>| dmaSize | DMA_SxCR_MINC | DMA_SxCR_CIRC;
+ 109:./la/la_sampling.cpp **** 	DMA2_Stream5->M0AR = (uint32_t)dataBuffer;//samplingRam;
+ 110:./la/la_sampling.cpp **** #ifdef SAMPLING_FSMC
+ 111:./la/la_sampling.cpp **** 	DMA2_Stream5->PAR  = (uint32_t)FSMC_ADDR;
+ 112:./la/la_sampling.cpp **** #else
+ 113:./la/la_sampling.cpp **** 	DMA2_Stream5->PAR  = (uint32_t)&(SAMPLING_PORT->IDR);
+ 114:./la/la_sampling.cpp **** #endif
+ 115:./la/la_sampling.cpp **** 	DMA2_Stream5->NDTR = dataTransferCount;//transferCount;// / transferSize;
+ 116:./la/la_sampling.cpp **** 	DMA2_Stream5->FCR = DMA_SxFCR_DMDIS | DMA_SxFCR_FTH;
+ 117:./la/la_sampling.cpp **** 
+ 118:./la/la_sampling.cpp **** #ifdef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 119:./la/la_sampling.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+ 120:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_15;
+ 121:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+ 122:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+ 123:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+ 124:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN ;
+ 125:./la/la_sampling.cpp **** 	GPIO_Init(SAMPLING_PORT, &GPIO_InitStructure);
+ 126:./la/la_sampling.cpp **** 	SAMPLING_PORT->ODR = 0;
+ 127:./la/la_sampling.cpp **** #endif
+ 128:./la/la_sampling.cpp **** }
+ 129:./la/la_sampling.cpp **** 
+ 130:./la/la_sampling.cpp **** void Sampler::SetupRLESamplingDMA(void *dataBufferA, void *dataBufferB, uint32_t dataTransferCount)
+ 131:./la/la_sampling.cpp **** {
+ 132:./la/la_sampling.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+ 133:./la/la_sampling.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1ENR_DMA2EN, ENABLE);
+ 134:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 135:./la/la_sampling.cpp **** 
+ 136:./la/la_sampling.cpp **** 	//TIM1_UP -> DMA2, Ch6, Stream5
+ 137:./la/la_sampling.cpp **** 	//DMA should be stopped before this point
+ 138:./la/la_sampling.cpp **** 	DMA2_Stream5->CR = (DMA_SxCR_CHSEL_1 | DMA_SxCR_CHSEL_2) | dmaSize | DMA_SxCR_MINC | DMA_SxCR_DBM 
+ 139:./la/la_sampling.cpp **** 	DMA2_Stream5->M0AR = (uint32_t)dataBufferA;
+ 140:./la/la_sampling.cpp **** 	DMA2_Stream5->M1AR = (uint32_t)dataBufferB;
+ 141:./la/la_sampling.cpp **** #ifdef SAMPLING_FSMC
+ 142:./la/la_sampling.cpp **** 	DMA2_Stream5->PAR  = (uint32_t)FSMC_ADDR;
+ 143:./la/la_sampling.cpp **** #else
+ 144:./la/la_sampling.cpp **** 	DMA2_Stream5->PAR  = (uint32_t)&(SAMPLING_PORT->IDR);
+ 145:./la/la_sampling.cpp **** #endif
+ 146:./la/la_sampling.cpp **** 	DMA2_Stream5->NDTR = dataTransferCount;//transferCount;// / transferSize;
+ 147:./la/la_sampling.cpp **** 	DMA2_Stream5->FCR = DMA_SxFCR_DMDIS | DMA_SxFCR_FTH;
+ 148:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 149:./la/la_sampling.cpp **** 
+ 150:./la/la_sampling.cpp **** 	switch(transferSize)
+ 151:./la/la_sampling.cpp **** 	{
+ 152:./la/la_sampling.cpp **** 	case 1:
+ 153:./la/la_sampling.cpp **** 		InterruptController::EnableChannel(DMA2_Stream5_IRQn, 0, 0,
+ 154:./la/la_sampling.cpp **** 			SamplingRLEFrameInterrupt<uint8_t, RLE_8BIT_FLAG, RLE_8BIT_MAX_COUNT>);
+ 155:./la/la_sampling.cpp **** 		samplingRLETailFrameInterrupt = SamplingRLETailFrameInterrupt<uint8_t, RLE_8BIT_FLAG, RLE_8BIT_MA
+ 156:./la/la_sampling.cpp **** 
+ 157:./la/la_sampling.cpp **** 		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+ 158:./la/la_sampling.cpp **** 		break;
+ 159:./la/la_sampling.cpp **** 	default:
+ 160:./la/la_sampling.cpp **** 	case 2:
+ 161:./la/la_sampling.cpp **** 		InterruptController::EnableChannel(DMA2_Stream5_IRQn, 0, 0,
+ 162:./la/la_sampling.cpp **** 				SamplingRLEFrameInterrupt<uint16_t, RLE_16BIT_FLAG, RLE_16BIT_MAX_COUNT>);
+ 163:./la/la_sampling.cpp **** 		samplingRLETailFrameInterrupt = SamplingRLETailFrameInterrupt<uint16_t, RLE_16BIT_FLAG, RLE_16BIT
+ 164:./la/la_sampling.cpp **** 
+ 165:./la/la_sampling.cpp **** 		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+ 166:./la/la_sampling.cpp **** 		break;
+ 167:./la/la_sampling.cpp **** 	}
+ 168:./la/la_sampling.cpp **** #ifdef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 169:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+ 170:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+ 171:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+ 172:./la/la_sampling.cpp **** 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN ;
+ 173:./la/la_sampling.cpp **** 	GPIO_Init(SAMPLING_PORT, &GPIO_InitStructure);
+ 174:./la/la_sampling.cpp **** 	SAMPLING_PORT->ODR = 0;
+ 175:./la/la_sampling.cpp **** #endif
+ 176:./la/la_sampling.cpp **** }
+ 177:./la/la_sampling.cpp **** 
+ 178:./la/la_sampling.cpp **** void Sampler::SetupRegularEXTITrigger(InterruptHandler interruptHandler)
+ 179:./la/la_sampling.cpp **** {
+ 180:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_SYSCFGEN, ENABLE);
+ 181:./la/la_sampling.cpp **** 
+ 182:./la/la_sampling.cpp **** 	//Trigger setup
+ 183:./la/la_sampling.cpp **** 	uint32_t rising = triggerMask & triggerValue;
+ 184:./la/la_sampling.cpp **** 	uint32_t falling = triggerMask & ~triggerValue;
+ 185:./la/la_sampling.cpp **** 	//route exti to triggerMask GPIO port
+ 186:./la/la_sampling.cpp **** 	uint32_t extiCR = 0;
+ 187:./la/la_sampling.cpp **** 	switch((uint32_t)SAMPLING_PORT)
+ 188:./la/la_sampling.cpp **** 	{
+ 189:./la/la_sampling.cpp **** 	case GPIOA_BASE:extiCR = 0x0000;break;
+ 190:./la/la_sampling.cpp **** 	case GPIOB_BASE:extiCR = 0x1111;break;
+ 191:./la/la_sampling.cpp **** 	case GPIOC_BASE:extiCR = 0x2222;break;
+ 192:./la/la_sampling.cpp **** 	case GPIOD_BASE:extiCR = 0x3333;break;
+ 193:./la/la_sampling.cpp **** 	case GPIOE_BASE:extiCR = 0x4444;break;
+ 194:./la/la_sampling.cpp **** 	case GPIOF_BASE:extiCR = 0x5555;break;
+ 195:./la/la_sampling.cpp **** 	case GPIOG_BASE:extiCR = 0x6666;break;
+ 196:./la/la_sampling.cpp **** 	case GPIOH_BASE:extiCR = 0x7777;break;
+ 197:./la/la_sampling.cpp **** 	case GPIOI_BASE:extiCR = 0x8888;break;
+ 198:./la/la_sampling.cpp **** 	}
+ 199:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[0] = extiCR;
+ 200:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[1] = extiCR;
+ 201:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[2] = extiCR;
+ 202:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[3] = extiCR;
+ 203:./la/la_sampling.cpp **** 
+ 204:./la/la_sampling.cpp **** 	EXTI->IMR  = 0;//mask;
+ 205:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;
+ 206:./la/la_sampling.cpp **** 	EXTI->RTSR = rising;
+ 207:./la/la_sampling.cpp **** 	EXTI->FTSR = falling;
+ 208:./la/la_sampling.cpp **** 
+ 209:./la/la_sampling.cpp **** 	__DSB();
+ 210:./la/la_sampling.cpp **** 
+ 211:./la/la_sampling.cpp **** 	if(triggerMask & 0x0001)InterruptController::EnableChannel(EXTI0_IRQn, 0, 0, interruptHandler);
+ 212:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI0_IRQn);
+ 213:./la/la_sampling.cpp **** 	if(triggerMask & 0x0002)InterruptController::EnableChannel(EXTI1_IRQn, 0, 0, interruptHandler);
+ 214:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI1_IRQn);
+ 215:./la/la_sampling.cpp **** 	if(triggerMask & 0x0004)InterruptController::EnableChannel(EXTI2_IRQn, 0, 0, interruptHandler);
+ 216:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI2_IRQn);
+ 217:./la/la_sampling.cpp **** 	if(triggerMask & 0x0008)InterruptController::EnableChannel(EXTI3_IRQn, 0, 0, interruptHandler);
+ 218:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI3_IRQn);
+ 219:./la/la_sampling.cpp **** 	if(triggerMask & 0x0010)InterruptController::EnableChannel(EXTI4_IRQn, 0, 0, interruptHandler);
+ 220:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI4_IRQn);
+ 221:./la/la_sampling.cpp **** 	if(triggerMask & 0x03E0)InterruptController::EnableChannel(EXTI9_5_IRQn, 0, 0, interruptHandler);
+ 222:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI9_5_IRQn);
+ 223:./la/la_sampling.cpp **** 	if(triggerMask & 0xFC00)InterruptController::EnableChannel(EXTI15_10_IRQn, 0, 0, interruptHandler)
+ 224:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI15_10_IRQn);
+ 225:./la/la_sampling.cpp **** 
+ 226:./la/la_sampling.cpp **** #ifdef SAMPLING_MANUAL //push-button-trigger
+ 227:./la/la_sampling.cpp **** 	TIM8->SMCR = TIM_SMCR_TS_0 | TIM_SMCR_TS_1 | TIM_SMCR_TS_2;//External trigger input
+ 228:./la/la_sampling.cpp **** 	TIM8->SMCR |= TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2;
+ 229:./la/la_sampling.cpp **** 	TIM8->DIER |= TIM_DIER_TIE;
+ 230:./la/la_sampling.cpp **** 	InterruptController::EnableChannel(TIM8_TRG_COM_TIM14_IRQn, 2, 0, SamplingManualStart);
+ 231:./la/la_sampling.cpp **** 	samplingManualToExternalTransit = interruptHandler;
+ 232:./la/la_sampling.cpp **** #endif
+ 233:./la/la_sampling.cpp **** }
+ 234:./la/la_sampling.cpp **** 
+ 235:./la/la_sampling.cpp **** void Sampler::SetupDelayTimer()
+ 236:./la/la_sampling.cpp **** {
+ 237:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM8EN, ENABLE);
+ 238:./la/la_sampling.cpp **** 	//After-trigger delay timer
+ 239:./la/la_sampling.cpp **** 	TIM8->CR1 = TIM_CR1_URS;//stop timer too
+ 240:./la/la_sampling.cpp **** 	TIM8->CNT = 0;
+ 241:./la/la_sampling.cpp **** 	TIM8->ARR = delayCount;//  / transferSize;
+ 242:./la/la_sampling.cpp **** 	TIM8->PSC = TIM1->ARR;
+ 243:./la/la_sampling.cpp **** 	TIM8->CR2 = 0;
+ 244:./la/la_sampling.cpp **** 	TIM8->EGR = TIM_EGR_UG;
+ 245:./la/la_sampling.cpp **** 	TIM8->SR &= ~TIM_SR_UIF;
+ 246:./la/la_sampling.cpp **** 	TIM8->DIER = TIM_DIER_UIE;
+ 247:./la/la_sampling.cpp **** 
+ 248:./la/la_sampling.cpp **** 	InterruptController::EnableChannel(TIM8_UP_TIM13_IRQn, 2, 0, SamplingFrameCompelte);
+ 249:./la/la_sampling.cpp **** }
+ 250:./la/la_sampling.cpp **** 
+ 251:./la/la_sampling.cpp **** void Sampler::SetupRegular()
+ 252:./la/la_sampling.cpp **** {
+ 253:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 254:./la/la_sampling.cpp **** 	//TIM1 overflows with sampling period. Overflow triggers DMA read from sampling port.
+ 255:./la/la_sampling.cpp **** 	//DMA works in circular mode (so no bursts possible) continuously writing data from GPIO port to
+ 256:./la/la_sampling.cpp **** 	//sampling ram buffer
+ 257:./la/la_sampling.cpp **** 	//Once trigger interrupt shoots TIM8 comes in play counting "sampling period" * "delay count" tick
+ 258:./la/la_sampling.cpp **** 	//Once TIM8 overflows and sampled data are sent to host.
+ 259:./la/la_sampling.cpp **** 	SetupSamplingTimer();
+ 260:./la/la_sampling.cpp **** 	SetupSamplingDMA(samplingRam, transferCount);
+ 261:./la/la_sampling.cpp **** 	SetupDelayTimer();
+ 262:./la/la_sampling.cpp **** 	SetupRegularEXTITrigger(SamplingExternalEventInterrupt);
+ 263:./la/la_sampling.cpp **** }
+ 264:./la/la_sampling.cpp **** 
+ 265:./la/la_sampling.cpp **** void Sampler::SetupRLE()
+ 266:./la/la_sampling.cpp **** {
+ 267:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 268:./la/la_sampling.cpp **** 	//Same as regular mode TIM1 provides reference clock for taking samples, but data are being stored
+ 269:./la/la_sampling.cpp **** 	//the temporary buffer. Once buffer is full (DMA still works in circular mode) compression functio
+ 270:./la/la_sampling.cpp **** 	//scans it, writing to final sampling buffer pairs:
+ 271:./la/la_sampling.cpp **** 	//	1. Value, with zeroed MSB
+ 272:./la/la_sampling.cpp **** 	//	2. Repeat count for this value, MSB set high
+ 273:./la/la_sampling.cpp **** 
+ 274:./la/la_sampling.cpp **** 	for(int i = 0; i < MAX_RLE_SAMPLE_COUNT; i++)
+ 275:./la/la_sampling.cpp **** 	{
+ 276:./la/la_sampling.cpp **** 		rleTempSamplingRamA[i] = rleTempSamplingRamB[i] = 0;
+ 277:./la/la_sampling.cpp **** 	}
+ 278:./la/la_sampling.cpp **** 	rlePtr = 0;
+ 279:./la/la_sampling.cpp **** 	rleValue = 0;
+ 280:./la/la_sampling.cpp **** 	rleRepeatCount = 0;
+ 281:./la/la_sampling.cpp **** 	rleDelayCount = delayCount;
+ 282:./la/la_sampling.cpp **** 	samplingRam[0] = rleValue;
+ 283:./la/la_sampling.cpp **** 	rleTailSampling = false;
+ 284:./la/la_sampling.cpp **** 
+ 285:./la/la_sampling.cpp **** 	SetupSamplingTimer();
+ 286:./la/la_sampling.cpp **** 	SetupRLESamplingDMA(rleTempSamplingRamA, rleTempSamplingRamB, MAX_RLE_SAMPLE_COUNT);
+ 287:./la/la_sampling.cpp **** 	SetupRegularEXTITrigger(SamplingRLEExternalEventInterrupt);
+ 288:./la/la_sampling.cpp **** 
+ 289:./la/la_sampling.cpp **** 	GPIOD->PUPDR = 2 << 4;
+ 290:./la/la_sampling.cpp **** }
+ 291:./la/la_sampling.cpp **** 
+ 292:./la/la_sampling.cpp **** void Sampler::Start()
+ 293:./la/la_sampling.cpp **** {
+ 294:./la/la_sampling.cpp **** 	if(flags & SUMP_FLAG1_ENABLE_RLE)
+ 295:./la/la_sampling.cpp **** 	{
+ 296:./la/la_sampling.cpp **** 		SetupRLE();
+ 297:./la/la_sampling.cpp **** 	}
+ 298:./la/la_sampling.cpp **** 	else
+ 299:./la/la_sampling.cpp **** 	{
+ 300:./la/la_sampling.cpp **** 		SetupRegular();
+ 301:./la/la_sampling.cpp **** 	}
+ 302:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 303:./la/la_sampling.cpp **** 	DMA2_Stream5->CR |= DMA_SxCR_EN;
+ 304:./la/la_sampling.cpp **** 	TIM1->CR1 |= TIM_CR1_CEN;//enable timer
+ 305:./la/la_sampling.cpp **** }
+ 306:./la/la_sampling.cpp **** 
+ 307:./la/la_sampling.cpp **** void Sampler::Stop()
+ 308:./la/la_sampling.cpp **** {
+ 309:./la/la_sampling.cpp **** 	DMA2_Stream5->CR &= ~(DMA_SxCR_TCIE | DMA_SxCR_EN);//stop dma
+ 310:./la/la_sampling.cpp **** 	TIM1->CR1 &= ~TIM_CR1_CEN;//stop sampling timer
+ 311:./la/la_sampling.cpp **** }
+ 312:./la/la_sampling.cpp **** 
+ 313:./la/la_sampling.cpp **** void Sampler::Arm(InterruptHandler handler)
+ 314:./la/la_sampling.cpp **** {
+ 315:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;//clear pending
+ 316:./la/la_sampling.cpp **** 	__DSB();
+ 317:./la/la_sampling.cpp **** 	EXTI->IMR = triggerMask;
+ 318:./la/la_sampling.cpp **** 
+ 319:./la/la_sampling.cpp **** 	comletionHandler = handler;
+ 320:./la/la_sampling.cpp **** }
+ 321:./la/la_sampling.cpp **** 
+ 322:./la/la_sampling.cpp **** uint32_t Sampler::ActualTransferCount()
+ 323:./la/la_sampling.cpp **** {
+ 324:./la/la_sampling.cpp **** 	return transferCount - (DMA2_Stream5->NDTR & ~3);
+ 325:./la/la_sampling.cpp **** }
+ 326:./la/la_sampling.cpp **** 
+ 327:./la/la_sampling.cpp **** uint8_t* Sampler::GetBufferTail()
+ 328:./la/la_sampling.cpp **** {
+ 329:./la/la_sampling.cpp **** 	return (uint8_t*)(samplingRam) + ActualTransferCount() * transferSize;
+ 330:./la/la_sampling.cpp **** }
+ 331:./la/la_sampling.cpp **** 
+ 332:./la/la_sampling.cpp **** uint32_t Sampler::GetBufferTailSize()
+ 333:./la/la_sampling.cpp **** {
+ 334:./la/la_sampling.cpp **** 	return ActualTransferCount() * transferSize;
+ 335:./la/la_sampling.cpp **** }
+ 336:./la/la_sampling.cpp **** 
+ 337:./la/la_sampling.cpp **** uint32_t Sampler::GetBufferSize()
+ 338:./la/la_sampling.cpp **** {
+ 339:./la/la_sampling.cpp **** 	return transferCount * transferSize;
+ 340:./la/la_sampling.cpp **** }
+ 341:./la/la_sampling.cpp **** 
+ 342:./la/la_sampling.cpp **** uint8_t* Sampler::GetBuffer()
+ 343:./la/la_sampling.cpp **** {
+ 344:./la/la_sampling.cpp **** 	return (uint8_t*)samplingRam;
+ 345:./la/la_sampling.cpp **** }
+ 346:./la/la_sampling.cpp **** 
+ 347:./la/la_sampling.cpp **** void SamplingClearBuffer()
+ 348:./la/la_sampling.cpp **** {
+ 349:./la/la_sampling.cpp **** 	for(int i = 0; i < MAX_SAMPLING_RAM; i++)
+ 350:./la/la_sampling.cpp **** 		samplingRam[i] = 0;
+ 351:./la/la_sampling.cpp **** }
+ 352:./la/la_sampling.cpp **** 
+ 353:./la/la_sampling.cpp **** static void SamplingFrameCompelte()
+ 354:./la/la_sampling.cpp **** {
+  25              		.loc 1 354 0
+  26              		.cfi_startproc
+  27              		@ args = 0, pretend = 0, frame = 0
+  28              		@ frame_needed = 0, uses_anonymous_args = 0
+  29              		@ link register save eliminated.
+ 355:./la/la_sampling.cpp **** 	TIM1->CR1 &= ~TIM_CR1_CEN;
+  30              		.loc 1 355 0
+  31 0000 114A     		ldr	r2, .L3
+  32 0002 1388     		ldrh	r3, [r2]
+  33 0004 23F00103 		bic	r3, r3, #1
+  34 0008 1B04     		lsls	r3, r3, #16
+  35 000a 1B0C     		lsrs	r3, r3, #16
+  36 000c 1380     		strh	r3, [r2]	@ movhi
+ 356:./la/la_sampling.cpp **** 	TIM8->CR1 &= ~TIM_CR1_CEN;
+  37              		.loc 1 356 0
+  38 000e B2F80034 		ldrh	r3, [r2, #1024]
+  39 0012 23F00103 		bic	r3, r3, #1
+  40 0016 1B04     		lsls	r3, r3, #16
+  41 0018 1B0C     		lsrs	r3, r3, #16
+  42 001a A2F80034 		strh	r3, [r2, #1024]	@ movhi
+ 357:./la/la_sampling.cpp **** 	TIM8->SR  &= ~TIM_SR_UIF;
+  43              		.loc 1 357 0
+  44 001e B2F81034 		ldrh	r3, [r2, #1040]
+  45 0022 23F00103 		bic	r3, r3, #1
+  46 0026 1B04     		lsls	r3, r3, #16
+  47 0028 1B0C     		lsrs	r3, r3, #16
+  48 002a A2F81034 		strh	r3, [r2, #1040]	@ movhi
+ 358:./la/la_sampling.cpp **** 	DMA2_Stream5->CR &= ~(DMA_SxCR_TCIE | DMA_SxCR_EN);
+  49              		.loc 1 358 0
+  50 002e 02F5B232 		add	r2, r2, #91136
+  51 0032 8832     		adds	r2, r2, #136
+  52 0034 1368     		ldr	r3, [r2]
+  53 0036 23F01103 		bic	r3, r3, #17
+  54 003a 1360     		str	r3, [r2]
+ 359:./la/la_sampling.cpp **** 	if(comletionHandler != NULL)
+  55              		.loc 1 359 0
+  56 003c 034B     		ldr	r3, .L3+4
+  57 003e 1B68     		ldr	r3, [r3]
+  58 0040 03B1     		cbz	r3, .L1
+ 360:./la/la_sampling.cpp **** 		comletionHandler();
+  59              		.loc 1 360 0
+  60 0042 1847     		bx	r3	@ indirect register sibling call
+  61              	.LVL0:
+  62              	.L1:
+ 361:./la/la_sampling.cpp **** }
+  63              		.loc 1 361 0
+  64 0044 7047     		bx	lr
+  65              	.L4:
+  66 0046 00BF     		.align	2
+  67              	.L3:
+  68 0048 00000140 		.word	1073807360
+  69 004c 00000000 		.word	.LANCHOR0
+  70              		.cfi_endproc
+  71              	.LFE148:
+  73              		.align	1
+  74              		.syntax unified
+  75              		.thumb
+  76              		.thumb_func
+  77              		.fpu fpv4-sp-d16
+  79              	_ZL30SamplingExternalEventInterruptv:
+  80              	.LFB149:
+ 362:./la/la_sampling.cpp **** 
+ 363:./la/la_sampling.cpp **** //uint32_t la_debug[2];
+ 364:./la/la_sampling.cpp **** static void SamplingExternalEventInterrupt()
+ 365:./la/la_sampling.cpp **** {
+  81              		.loc 1 365 0
+  82              		.cfi_startproc
+  83              		@ args = 0, pretend = 0, frame = 0
+  84              		@ frame_needed = 0, uses_anonymous_args = 0
+  85              		@ link register save eliminated.
+ 366:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;
+  86              		.loc 1 366 0
+  87 0050 0A4A     		ldr	r2, .L6
+  88 0052 4FF0FF33 		mov	r3, #-1
+  89 0056 5361     		str	r3, [r2, #20]
+  90              	.LBB26:
+  91              	.LBB27:
+  92              		.file 2 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h"
+   1:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /**************************************************************************//**
+   2:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @file     core_cmInstr.h
+   3:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @brief    CMSIS Cortex-M Core Instruction Access Header File
+   4:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @version  V2.10
+   5:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @date     19. July 2011
+   6:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  *
+   7:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @note
+   8:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * Copyright (C) 2009-2011 ARM Limited. All rights reserved.
+   9:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  *
+  10:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @par
+  11:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * ARM Limited (ARM) is supplying this software for use with Cortex-M 
+  12:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * processor based microcontrollers.  This file can be freely distributed 
+  13:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * within development tools that are supporting such ARM based processors. 
+  14:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  *
+  15:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * @par
+  16:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
+  17:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
+  18:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
+  19:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * ARM SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR
+  20:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  * CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+  21:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  *
+  22:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  ******************************************************************************/
+  23:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  24:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #ifndef __CORE_CMINSTR_H
+  25:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __CORE_CMINSTR_H
+  26:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  27:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  28:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /* ##########################  Core Instruction Access  ######################### */
+  29:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \defgroup CMSIS_Core_InstructionInterface CMSIS Core Instruction Interface
+  30:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   Access to dedicated instructions
+  31:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   @{
+  32:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** */
+  33:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  34:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #if   defined ( __CC_ARM ) /*------------------RealView Compiler -----------------*/
+  35:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /* ARM armcc specific functions */
+  36:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  37:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #if (__ARMCC_VERSION < 400677)
+  38:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   #error "Please use ARM Compiler Toolchain V4.0.677 or later!"
+  39:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #endif
+  40:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  41:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  42:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  No Operation
+  43:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  44:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     No Operation does nothing. This instruction can be used for code alignment purposes.
+  45:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  46:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __NOP                             __nop
+  47:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  48:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  49:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Wait For Interrupt
+  50:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  51:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Wait For Interrupt is a hint instruction that suspends execution
+  52:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     until one of a number of events occurs.
+  53:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  54:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __WFI                             __wfi
+  55:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  56:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  57:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Wait For Event
+  58:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  59:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Wait For Event is a hint instruction that permits the processor to enter
+  60:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     a low-power state until one of a number of events occurs.
+  61:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  62:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __WFE                             __wfe
+  63:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  64:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  65:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Send Event
+  66:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  67:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Send Event is a hint instruction. It causes an event to be signaled to the CPU.
+  68:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  69:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __SEV                             __sev
+  70:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  71:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  72:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Instruction Synchronization Barrier
+  73:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  74:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Instruction Synchronization Barrier flushes the pipeline in the processor, 
+  75:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     so that all instructions following the ISB are fetched from cache or 
+  76:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     memory, after the instruction has been completed.
+  77:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  78:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __ISB()                           __isb(0xF)
+  79:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  80:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  81:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Data Synchronization Barrier
+  82:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  83:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function acts as a special kind of Data Memory Barrier. 
+  84:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     It completes when all explicit memory accesses before this instruction complete.
+  85:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  86:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __DSB()                           __dsb(0xF)
+  87:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  88:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  89:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Data Memory Barrier
+  90:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  91:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function ensures the apparent order of the explicit memory operations before 
+  92:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     and after the instruction, without ensuring their completion.
+  93:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+  94:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __DMB()                           __dmb(0xF)
+  95:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  96:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  97:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Reverse byte order (32 bit)
+  98:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+  99:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function reverses the byte order in integer value.
+ 100:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 101:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    value  Value to reverse
+ 102:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return               Reversed value
+ 103:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 104:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __REV                             __rev
+ 105:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 106:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 107:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Reverse byte order (16 bit)
+ 108:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 109:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function reverses the byte order in two unsigned short values.
+ 110:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 111:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    value  Value to reverse
+ 112:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return               Reversed value
+ 113:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 114:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** static __INLINE __ASM uint32_t __REV16(uint32_t value)
+ 115:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 116:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   rev16 r0, r0
+ 117:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   bx lr
+ 118:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 119:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 120:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 121:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Reverse byte order in signed short value
+ 122:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 123:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function reverses the byte order in a signed short value with sign extension to integer.
+ 124:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 125:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    value  Value to reverse
+ 126:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return               Reversed value
+ 127:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 128:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** static __INLINE __ASM int32_t __REVSH(int32_t value)
+ 129:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 130:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   revsh r0, r0
+ 131:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   bx lr
+ 132:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 133:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 134:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 135:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #if       (__CORTEX_M >= 0x03)
+ 136:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 137:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Reverse bit order of value
+ 138:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 139:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function reverses the bit order of the given value.
+ 140:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 141:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    value  Value to reverse
+ 142:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return               Reversed value
+ 143:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 144:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __RBIT                            __rbit
+ 145:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 146:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 147:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  LDR Exclusive (8 bit)
+ 148:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 149:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive LDR command for 8 bit value.
+ 150:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 151:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to data
+ 152:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return             value of type uint8_t at (*ptr)
+ 153:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 154:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __LDREXB(ptr)                     ((uint8_t ) __ldrex(ptr))
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 156:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 157:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  LDR Exclusive (16 bit)
+ 158:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 159:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive LDR command for 16 bit values.
+ 160:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 161:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to data
+ 162:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return        value of type uint16_t at (*ptr)
+ 163:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 164:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __LDREXH(ptr)                     ((uint16_t) __ldrex(ptr))
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 166:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 167:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  LDR Exclusive (32 bit)
+ 168:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 169:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive LDR command for 32 bit values.
+ 170:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 171:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to data
+ 172:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return        value of type uint32_t at (*ptr)
+ 173:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 174:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __LDREXW(ptr)                     ((uint32_t ) __ldrex(ptr))
+ 175:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 176:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 177:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  STR Exclusive (8 bit)
+ 178:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 179:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive STR command for 8 bit values.
+ 180:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 181:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to store
+ 182:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to location
+ 183:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          0  Function succeeded
+ 184:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          1  Function failed
+ 185:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 186:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __STREXB(value, ptr)              __strex(value, ptr)
+ 187:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 188:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 189:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  STR Exclusive (16 bit)
+ 190:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 191:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive STR command for 16 bit values.
+ 192:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 193:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to store
+ 194:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to location
+ 195:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          0  Function succeeded
+ 196:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          1  Function failed
+ 197:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 198:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __STREXH(value, ptr)              __strex(value, ptr)
+ 199:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 200:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 201:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  STR Exclusive (32 bit)
+ 202:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 203:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function performs a exclusive STR command for 32 bit values.
+ 204:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 205:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to store
+ 206:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    ptr  Pointer to location
+ 207:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          0  Function succeeded
+ 208:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return          1  Function failed
+ 209:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __STREXW(value, ptr)              __strex(value, ptr)
+ 211:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 212:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 213:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Remove the exclusive lock
+ 214:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 215:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function removes the exclusive lock which is created by LDREX.
+ 216:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 217:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 218:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __CLREX                           __clrex
+ 219:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 220:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 221:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Signed Saturate
+ 222:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 223:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function saturates a signed value.
+ 224:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 225:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to be saturated
+ 226:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    sat  Bit position to saturate to (1..32)
+ 227:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return             Saturated value
+ 228:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 229:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __SSAT                            __ssat
+ 230:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 231:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 232:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Unsigned Saturate
+ 233:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 234:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function saturates an unsigned value.
+ 235:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 236:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to be saturated
+ 237:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]    sat  Bit position to saturate to (0..31)
+ 238:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return             Saturated value
+ 239:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 240:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __USAT                            __usat
+ 241:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 242:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 243:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Count leading zeros
+ 244:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 245:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function counts the number of leading zeros of a data value.
+ 246:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 247:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \param [in]  value  Value to count the leading zeros
+ 248:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     \return             number of leading zeros in value
+ 249:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 250:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #define __CLZ                             __clz 
+ 251:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 252:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #endif /* (__CORTEX_M >= 0x03) */
+ 253:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 254:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 255:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 256:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #elif defined ( __ICCARM__ ) /*------------------ ICC Compiler -------------------*/
+ 257:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /* IAR iccarm specific functions */
+ 258:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 259:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #include <cmsis_iar.h>
+ 260:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 261:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 262:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** #elif defined ( __GNUC__ ) /*------------------ GNU Compiler ---------------------*/
+ 263:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /* GNU gcc specific functions */
+ 264:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 265:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  No Operation
+ 266:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 267:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     No Operation does nothing. This instruction can be used for code alignment purposes.
+ 268:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 269:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __NOP(void)
+ 270:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 271:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("nop");
+ 272:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 273:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 274:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 275:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Wait For Interrupt
+ 276:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 277:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Wait For Interrupt is a hint instruction that suspends execution
+ 278:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     until one of a number of events occurs.
+ 279:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 280:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __WFI(void)
+ 281:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 282:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("wfi");
+ 283:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 284:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 285:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 286:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Wait For Event
+ 287:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 288:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Wait For Event is a hint instruction that permits the processor to enter
+ 289:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     a low-power state until one of a number of events occurs.
+ 290:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 291:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __WFE(void)
+ 292:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 293:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("wfe");
+ 294:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 295:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 296:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 297:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Send Event
+ 298:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 299:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Send Event is a hint instruction. It causes an event to be signaled to the CPU.
+ 300:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 301:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __SEV(void)
+ 302:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 303:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("sev");
+ 304:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 305:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 306:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 307:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Instruction Synchronization Barrier
+ 308:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 309:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     Instruction Synchronization Barrier flushes the pipeline in the processor, 
+ 310:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     so that all instructions following the ISB are fetched from cache or 
+ 311:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     memory, after the instruction has been completed.
+ 312:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 313:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __ISB(void)
+ 314:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 315:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("isb");
+ 316:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** }
+ 317:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 318:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 319:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** /** \brief  Data Synchronization Barrier
+ 320:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** 
+ 321:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     This function acts as a special kind of Data Memory Barrier. 
+ 322:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****     It completes when all explicit memory accesses before this instruction complete.
+ 323:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****  */
+ 324:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** __attribute__( ( always_inline ) ) static __INLINE void __DSB(void)
+ 325:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h **** {
+ 326:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h ****   __ASM volatile ("dsb");
+  93              		.loc 2 326 0
+  94              		.syntax unified
+  95              	@ 326 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h" 1
+  96 0058 BFF34F8F 		dsb
+  97              	@ 0 "" 2
+  98              		.thumb
+  99              		.syntax unified
+ 100              	.LBE27:
+ 101              	.LBE26:
+ 367:./la/la_sampling.cpp **** 	__DSB();
+ 368:./la/la_sampling.cpp **** 	EXTI->IMR = 0;
+ 102              		.loc 1 368 0
+ 103 005c 0023     		movs	r3, #0
+ 104 005e 1360     		str	r3, [r2]
+ 369:./la/la_sampling.cpp **** 	TIM8->CNT = 0;
+ 105              		.loc 1 369 0
+ 106 0060 A2F56052 		sub	r2, r2, #14336
+ 107 0064 5362     		str	r3, [r2, #36]
+ 370:./la/la_sampling.cpp **** 	TIM8->SR  &= ~TIM_SR_UIF;
+ 108              		.loc 1 370 0
+ 109 0066 138A     		ldrh	r3, [r2, #16]
+ 110 0068 23F00103 		bic	r3, r3, #1
+ 111 006c 1B04     		lsls	r3, r3, #16
+ 112 006e 1B0C     		lsrs	r3, r3, #16
+ 113 0070 1382     		strh	r3, [r2, #16]	@ movhi
+ 371:./la/la_sampling.cpp **** 	TIM8->CR1 |= TIM_CR1_CEN;
+ 114              		.loc 1 371 0
+ 115 0072 1388     		ldrh	r3, [r2]
+ 116 0074 43F00103 		orr	r3, r3, #1
+ 117 0078 1380     		strh	r3, [r2]	@ movhi
+ 372:./la/la_sampling.cpp **** 	//la_debug[0] = DMA2_Stream5->NDTR;
+ 373:./la/la_sampling.cpp **** 	//la_debug[1]++;
+ 374:./la/la_sampling.cpp **** }
+ 118              		.loc 1 374 0
+ 119 007a 7047     		bx	lr
+ 120              	.L7:
+ 121              		.align	2
+ 122              	.L6:
+ 123 007c 003C0140 		.word	1073822720
+ 124              		.cfi_endproc
+ 125              	.LFE149:
+ 127              		.align	1
+ 128              		.syntax unified
+ 129              		.thumb
+ 130              		.thumb_func
+ 131              		.fpu fpv4-sp-d16
+ 133              	_ZL19SamplingManualStartv:
+ 134              	.LFB151:
+ 375:./la/la_sampling.cpp **** 
+ 376:./la/la_sampling.cpp **** static void SamplingRLEExternalEventInterrupt()
+ 377:./la/la_sampling.cpp **** {
+ 378:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;
+ 379:./la/la_sampling.cpp **** 	__DSB();
+ 380:./la/la_sampling.cpp **** 	EXTI->IMR = 0;
+ 381:./la/la_sampling.cpp **** 	rleDelayCount = delayCount;
+ 382:./la/la_sampling.cpp **** 	rleTailSampling = true;
+ 383:./la/la_sampling.cpp **** 	GPIOD->PUPDR = 1 << 4;
+ 384:./la/la_sampling.cpp **** 	InterruptController::SetHandler(DMA2_Stream5_IRQn, samplingRLETailFrameInterrupt);
+ 385:./la/la_sampling.cpp **** }
+ 386:./la/la_sampling.cpp **** 
+ 387:./la/la_sampling.cpp **** static void SamplingManualStart()
+ 388:./la/la_sampling.cpp **** {
+ 135              		.loc 1 388 0
+ 136              		.cfi_startproc
+ 137              		@ args = 0, pretend = 0, frame = 0
+ 138              		@ frame_needed = 0, uses_anonymous_args = 0
+ 139              		@ link register save eliminated.
+ 389:./la/la_sampling.cpp **** 	TIM8->SR &= ~TIM_SR_TIF;
+ 140              		.loc 1 389 0
+ 141 0080 074A     		ldr	r2, .L9
+ 142 0082 138A     		ldrh	r3, [r2, #16]
+ 143 0084 23F04003 		bic	r3, r3, #64
+ 144 0088 1B04     		lsls	r3, r3, #16
+ 145 008a 1B0C     		lsrs	r3, r3, #16
+ 146 008c 1382     		strh	r3, [r2, #16]	@ movhi
+ 390:./la/la_sampling.cpp **** 	TIM8->DIER &= ~TIM_DIER_TIE;
+ 147              		.loc 1 390 0
+ 148 008e 9389     		ldrh	r3, [r2, #12]
+ 149 0090 23F04003 		bic	r3, r3, #64
+ 150 0094 1B04     		lsls	r3, r3, #16
+ 151 0096 1B0C     		lsrs	r3, r3, #16
+ 152 0098 9381     		strh	r3, [r2, #12]	@ movhi
+ 391:./la/la_sampling.cpp **** 	//call regular handler
+ 392:./la/la_sampling.cpp **** 	//SamplingExternalEventInterrupt();
+ 393:./la/la_sampling.cpp **** 	samplingManualToExternalTransit();
+ 153              		.loc 1 393 0
+ 154 009a 024B     		ldr	r3, .L9+4
+ 155 009c 5B68     		ldr	r3, [r3, #4]
+ 156 009e 1847     		bx	r3	@ indirect register sibling call
+ 157              	.LVL1:
+ 158              	.L10:
+ 159              		.align	2
+ 160              	.L9:
+ 161 00a0 00040140 		.word	1073808384
+ 162 00a4 00000000 		.word	.LANCHOR0
+ 163              		.cfi_endproc
+ 164              	.LFE151:
+ 166              		.align	1
+ 167              		.syntax unified
+ 168              		.thumb
+ 169              		.thumb_func
+ 170              		.fpu fpv4-sp-d16
+ 172              	_Z25SamplingRLEFrameInterruptIhLm128ELm127EEvv:
+ 173              	.LFB154:
+ 394:./la/la_sampling.cpp **** }
+ 395:./la/la_sampling.cpp **** 
+ 396:./la/la_sampling.cpp **** template <class samplesType, uint32_t FLAG, uint32_t MAX_COUNT>
+ 397:./la/la_sampling.cpp **** static void SamplingRLEFrameInterrupt()
+ 174              		.loc 1 397 0
+ 175              		.cfi_startproc
+ 176              		@ Stack Align: May be called with mis-aligned SP.
+ 177              		@ args = 0, pretend = 0, frame = 0
+ 178              		@ frame_needed = 0, uses_anonymous_args = 0
+ 179 00a8 6846     		mov	r0, sp
+ 180              		.cfi_register 13, 0
+ 181 00aa 20F00701 		bic	r1, r0, #7
+ 182 00ae 8D46     		mov	sp, r1
+ 183 00b0 2DE9F143 		push	{r0, r4, r5, r6, r7, r8, r9, lr}
+ 184              	.LCFI0:
+ 185              		.cfi_def_cfa_offset 32
+ 186              		.cfi_offset 13, -32
+ 187              		.cfi_offset 4, -28
+ 188              		.cfi_offset 5, -24
+ 189              		.cfi_offset 6, -20
+ 190              		.cfi_offset 7, -16
+ 191              		.cfi_offset 8, -12
+ 192              		.cfi_offset 9, -8
+ 193              		.cfi_offset 14, -4
+ 398:./la/la_sampling.cpp **** {
+ 399:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 194              		.loc 1 399 0
+ 195 00b4 234B     		ldr	r3, .L28
+ 196 00b6 2448     		ldr	r0, .L28+4
+ 400:./la/la_sampling.cpp **** 
+ 401:./la/la_sampling.cpp **** 	static samplesType * store = (samplesType*)samplingRam;
+ 402:./la/la_sampling.cpp **** 	samplesType * samples = (samplesType*)((DMA2_Stream5->CR & DMA_SxCR_CT) ? rleTempSamplingRamA : rl
+ 403:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 404:./la/la_sampling.cpp **** 	uint32_t newValue;
+ 405:./la/la_sampling.cpp **** 
+ 406:./la/la_sampling.cpp **** 	do
+ 407:./la/la_sampling.cpp **** 	{
+ 408:./la/la_sampling.cpp **** 		newValue =  *samples++
+ 409:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 410:./la/la_sampling.cpp **** 				& MAX_COUNT
+ 411:./la/la_sampling.cpp **** #endif
+ 412:./la/la_sampling.cpp **** 				;
+ 413:./la/la_sampling.cpp **** 
+ 414:./la/la_sampling.cpp **** 		if(rleValue == newValue)
+ 415:./la/la_sampling.cpp **** 		{
+ 416:./la/la_sampling.cpp **** 			rleRepeatCount++;
+ 417:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 418:./la/la_sampling.cpp **** 			{
+ 419:./la/la_sampling.cpp **** 				store[rlePtr++] = rleValue;
+ 420:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 421:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 422:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 423:./la/la_sampling.cpp **** 				{
+ 424:./la/la_sampling.cpp **** 					rlePtr = 0;
+ 425:./la/la_sampling.cpp **** 				}
+ 426:./la/la_sampling.cpp **** 			}
+ 427:./la/la_sampling.cpp **** 		}
+ 428:./la/la_sampling.cpp **** 		else//change detected
+ 429:./la/la_sampling.cpp **** 		{
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleValue;
+ 197              		.loc 1 430 0
+ 198 00b8 244F     		ldr	r7, .L28+8
+ 399:./la/la_sampling.cpp **** 
+ 199              		.loc 1 399 0
+ 200 00ba 4FF40062 		mov	r2, #2048
+ 201 00be DA60     		str	r2, [r3, #12]
+ 402:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 202              		.loc 1 402 0
+ 203 00c0 D3F88820 		ldr	r2, [r3, #136]
+ 204 00c4 224B     		ldr	r3, .L28+12
+ 205 00c6 12F4002F 		tst	r2, #524288
+ 206 00ca 03F50074 		add	r4, r3, #512
+ 431:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 432:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 207              		.loc 1 432 0
+ 208 00ce D0E9026E 		ldrd	r6, lr, [r0, #8]
+ 402:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 209              		.loc 1 402 0
+ 210 00d2 08BF     		it	eq
+ 211 00d4 1C46     		moveq	r4, r3
+ 212 00d6 D0E90423 		ldrd	r2, r3, [r0, #16]
+ 213              		.loc 1 432 0
+ 214 00da 0021     		movs	r1, #0
+ 215 00dc 04F18008 		add	r8, r4, #128
+ 216 00e0 8C46     		mov	ip, r1
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 217              		.loc 1 420 0
+ 218 00e2 4FF0FF09 		mov	r9, #255
+ 219              	.L16:
+ 220              	.LVL2:
+ 221 00e6 14F8015B 		ldrb	r5, [r4], #1	@ zero_extendqisi2
+ 222              	.LVL3:
+ 223 00ea 05F07F05 		and	r5, r5, #127
+ 224              	.LVL4:
+ 414:./la/la_sampling.cpp **** 		{
+ 225              		.loc 1 414 0
+ 226 00ee B542     		cmp	r5, r6
+ 227 00f0 0ED1     		bne	.L13
+ 416:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 228              		.loc 1 416 0
+ 229 00f2 0132     		adds	r2, r2, #1
+ 417:./la/la_sampling.cpp **** 			{
+ 230              		.loc 1 417 0
+ 231 00f4 7F2A     		cmp	r2, #127
+ 232 00f6 17D1     		bne	.L14
+ 419:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 233              		.loc 1 419 0
+ 234 00f8 5A1C     		adds	r2, r3, #1
+ 235 00fa DE55     		strb	r6, [r3, r7]
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 236              		.loc 1 420 0
+ 237 00fc 0233     		adds	r3, r3, #2
+ 422:./la/la_sampling.cpp **** 				{
+ 238              		.loc 1 422 0
+ 239 00fe 7345     		cmp	r3, lr
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 240              		.loc 1 420 0
+ 241 0100 02F80790 		strb	r9, [r2, r7]
+ 422:./la/la_sampling.cpp **** 				{
+ 242              		.loc 1 422 0
+ 243 0104 4FF00101 		mov	r1, #1
+ 244 0108 00D3     		bcc	.L20
+ 424:./la/la_sampling.cpp **** 				}
+ 245              		.loc 1 424 0
+ 246 010a 0023     		movs	r3, #0
+ 247              	.L20:
+ 421:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 248              		.loc 1 421 0
+ 249 010c 0022     		movs	r2, #0
+ 250 010e 0BE0     		b	.L14
+ 251              	.L13:
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 252              		.loc 1 430 0
+ 253 0110 591C     		adds	r1, r3, #1
+ 431:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 254              		.loc 1 431 0
+ 255 0112 62F07F02 		orn	r2, r2, #127
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 256              		.loc 1 430 0
+ 257 0116 DE55     		strb	r6, [r3, r7]
+ 431:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 258              		.loc 1 431 0
+ 259 0118 CA55     		strb	r2, [r1, r7]
+ 260 011a 0233     		adds	r3, r3, #2
+ 421:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 261              		.loc 1 421 0
+ 262 011c 0121     		movs	r1, #1
+ 433:./la/la_sampling.cpp **** 			{
+ 434:./la/la_sampling.cpp **** 				rlePtr = 0;
+ 263              		.loc 1 434 0
+ 264 011e 7345     		cmp	r3, lr
+ 265 0120 28BF     		it	cs
+ 266 0122 0023     		movcs	r3, #0
+ 435:./la/la_sampling.cpp **** 			}
+ 436:./la/la_sampling.cpp **** 
+ 437:./la/la_sampling.cpp **** 			rleRepeatCount = 0;
+ 267              		.loc 1 437 0
+ 268 0124 0022     		movs	r2, #0
+ 269 0126 8C46     		mov	ip, r1
+ 270              	.L14:
+ 406:./la/la_sampling.cpp **** 	{
+ 271              		.loc 1 406 0
+ 272 0128 4445     		cmp	r4, r8
+ 408:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 273              		.loc 1 408 0
+ 274 012a 2E46     		mov	r6, r5
+ 406:./la/la_sampling.cpp **** 	{
+ 275              		.loc 1 406 0
+ 276 012c DBD1     		bne	.L16
+ 277 012e BCF1000F 		cmp	ip, #0
+ 278 0132 00D0     		beq	.L17
+ 279 0134 8560     		str	r5, [r0, #8]
+ 280              	.L17:
+ 281 0136 0261     		str	r2, [r0, #16]
+ 282 0138 01B1     		cbz	r1, .L11
+ 283 013a 4361     		str	r3, [r0, #20]
+ 284              	.L11:
+ 438:./la/la_sampling.cpp **** 			rleValue = newValue;
+ 439:./la/la_sampling.cpp **** 		}
+ 440:./la/la_sampling.cpp **** 	}
+ 441:./la/la_sampling.cpp **** 	while(--n);
+ 442:./la/la_sampling.cpp **** }
+ 285              		.loc 1 442 0
+ 286 013c BDE8F143 		pop	{r0, r4, r5, r6, r7, r8, r9, lr}
+ 287              	.LCFI1:
+ 288              		.cfi_restore 14
+ 289              		.cfi_restore 9
+ 290              		.cfi_restore 8
+ 291              		.cfi_restore 7
+ 292              		.cfi_restore 6
+ 293              		.cfi_restore 5
+ 294              		.cfi_restore 4
+ 295              		.cfi_restore 0
+ 296              		.cfi_def_cfa_offset 0
+ 297              	.LVL5:
+ 298 0140 8546     		mov	sp, r0
+ 299 0142 7047     		bx	lr
+ 300              	.L29:
+ 301              		.align	2
+ 302              	.L28:
+ 303 0144 00640240 		.word	1073898496
+ 304 0148 00000000 		.word	.LANCHOR0
+ 305 014c 00000000 		.word	samplingRam
+ 306 0150 00000000 		.word	.LANCHOR1
+ 307              		.cfi_endproc
+ 308              	.LFE154:
+ 310              		.align	1
+ 311              		.syntax unified
+ 312              		.thumb
+ 313              		.thumb_func
+ 314              		.fpu fpv4-sp-d16
+ 316              	_Z29SamplingRLETailFrameInterruptIhLm128ELm127EEvv:
+ 317              	.LFB155:
+ 443:./la/la_sampling.cpp **** 
+ 444:./la/la_sampling.cpp **** template <class samplesType, uint32_t FLAG, uint32_t MAX_COUNT>
+ 445:./la/la_sampling.cpp **** static void SamplingRLETailFrameInterrupt()
+ 318              		.loc 1 445 0
+ 319              		.cfi_startproc
+ 320              		@ Stack Align: May be called with mis-aligned SP.
+ 321              		@ args = 0, pretend = 0, frame = 16
+ 322              		@ frame_needed = 0, uses_anonymous_args = 0
+ 323 0154 6846     		mov	r0, sp
+ 324              		.cfi_register 13, 0
+ 325 0156 20F00701 		bic	r1, r0, #7
+ 326 015a 8D46     		mov	sp, r1
+ 327 015c 2DE9F14F 		push	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 328              	.LCFI2:
+ 329              		.cfi_def_cfa_offset 40
+ 330              		.cfi_offset 13, -40
+ 331              		.cfi_offset 4, -36
+ 332              		.cfi_offset 5, -32
+ 333              		.cfi_offset 6, -28
+ 334              		.cfi_offset 7, -24
+ 335              		.cfi_offset 8, -20
+ 336              		.cfi_offset 9, -16
+ 337              		.cfi_offset 10, -12
+ 338              		.cfi_offset 11, -8
+ 339              		.cfi_offset 14, -4
+ 446:./la/la_sampling.cpp **** {
+ 447:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 340              		.loc 1 447 0
+ 341 0160 3D4B     		ldr	r3, .L66
+ 448:./la/la_sampling.cpp **** 
+ 449:./la/la_sampling.cpp **** 	static samplesType * store = (samplesType*)samplingRam;
+ 450:./la/la_sampling.cpp **** 	samplesType * samples = (samplesType*)((DMA2_Stream5->CR & DMA_SxCR_CT) ? rleTempSamplingRamA : rl
+ 342              		.loc 1 450 0
+ 343 0162 3E4D     		ldr	r5, .L66+4
+ 451:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 452:./la/la_sampling.cpp **** 	uint32_t newValue;
+ 453:./la/la_sampling.cpp **** 
+ 454:./la/la_sampling.cpp **** 	do
+ 455:./la/la_sampling.cpp **** 	{
+ 456:./la/la_sampling.cpp **** 		newValue =  *samples++
+ 457:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 458:./la/la_sampling.cpp **** 				& MAX_COUNT
+ 459:./la/la_sampling.cpp **** #endif
+ 460:./la/la_sampling.cpp **** 				;
+ 461:./la/la_sampling.cpp **** 
+ 462:./la/la_sampling.cpp **** 		if(rleValue == newValue)
+ 463:./la/la_sampling.cpp **** 		{
+ 464:./la/la_sampling.cpp **** 			rleRepeatCount++;
+ 465:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 466:./la/la_sampling.cpp **** 			{
+ 467:./la/la_sampling.cpp **** 				store[rlePtr++] = rleValue;
+ 468:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 469:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 470:./la/la_sampling.cpp **** 
+ 471:./la/la_sampling.cpp **** 				rleDelayCount -= 2;
+ 472:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 473:./la/la_sampling.cpp **** 				{
+ 474:./la/la_sampling.cpp **** 					SamplingFrameCompelte();
+ 475:./la/la_sampling.cpp **** 					return;
+ 476:./la/la_sampling.cpp **** 				}
+ 477:./la/la_sampling.cpp **** 
+ 478:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 479:./la/la_sampling.cpp **** 				{
+ 480:./la/la_sampling.cpp **** 					rlePtr = 0;
+ 481:./la/la_sampling.cpp **** 				}
+ 482:./la/la_sampling.cpp **** 			}
+ 483:./la/la_sampling.cpp **** 		}
+ 484:./la/la_sampling.cpp **** 		else//change detected
+ 485:./la/la_sampling.cpp **** 		{
+ 486:./la/la_sampling.cpp **** 			{
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleValue;
+ 344              		.loc 1 487 0
+ 345 0164 DFF8FC80 		ldr	r8, .L66+12
+ 447:./la/la_sampling.cpp **** 
+ 346              		.loc 1 447 0
+ 347 0168 4FF40062 		mov	r2, #2048
+ 348 016c DA60     		str	r2, [r3, #12]
+ 450:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 349              		.loc 1 450 0
+ 350 016e D3F88820 		ldr	r2, [r3, #136]
+ 445:./la/la_sampling.cpp **** {
+ 351              		.loc 1 445 0
+ 352 0172 84B0     		sub	sp, sp, #16
+ 353              	.LCFI3:
+ 354              		.cfi_def_cfa_offset 56
+ 450:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 355              		.loc 1 450 0
+ 356 0174 12F4002F 		tst	r2, #524288
+ 357 0178 05F50073 		add	r3, r5, #512
+ 358 017c 08BF     		it	eq
+ 359 017e 2B46     		moveq	r3, r5
+ 360 0180 0193     		str	r3, [sp, #4]
+ 361 0182 0199     		ldr	r1, [sp, #4]
+ 362 0184 364B     		ldr	r3, .L66+8
+ 363 0186 8031     		adds	r1, r1, #128
+ 488:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 489:./la/la_sampling.cpp **** 
+ 490:./la/la_sampling.cpp **** 				rleDelayCount -= 2;
+ 491:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 492:./la/la_sampling.cpp **** 				{
+ 493:./la/la_sampling.cpp **** 					SamplingFrameCompelte();
+ 494:./la/la_sampling.cpp **** 					return;
+ 495:./la/la_sampling.cpp **** 				}
+ 496:./la/la_sampling.cpp **** 			}
+ 497:./la/la_sampling.cpp **** 
+ 498:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 364              		.loc 1 498 0
+ 365 0188 D3E9026A 		ldrd	r6, r10, [r3, #8]
+ 366 018c D3E90520 		ldrd	r2, r0, [r3, #20]
+ 367 0190 0391     		str	r1, [sp, #12]
+ 368 0192 1C69     		ldr	r4, [r3, #16]
+ 369 0194 0021     		movs	r1, #0
+ 370 0196 8C46     		mov	ip, r1
+ 371 0198 8946     		mov	r9, r1
+ 372 019a 8E46     		mov	lr, r1
+ 468:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 373              		.loc 1 468 0
+ 374 019c 4FF0FF0B 		mov	fp, #255
+ 375              	.L42:
+ 376              	.LVL6:
+ 377 01a0 019D     		ldr	r5, [sp, #4]
+ 378 01a2 15F8017B 		ldrb	r7, [r5], #1	@ zero_extendqisi2
+ 379 01a6 0195     		str	r5, [sp, #4]
+ 380              	.LVL7:
+ 381 01a8 07F07F05 		and	r5, r7, #127
+ 382              	.LVL8:
+ 462:./la/la_sampling.cpp **** 		{
+ 383              		.loc 1 462 0
+ 384 01ac B542     		cmp	r5, r6
+ 385 01ae 0295     		str	r5, [sp, #8]
+ 386              	.LVL9:
+ 387 01b0 22D1     		bne	.L32
+ 464:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 388              		.loc 1 464 0
+ 389 01b2 0134     		adds	r4, r4, #1
+ 465:./la/la_sampling.cpp **** 			{
+ 390              		.loc 1 465 0
+ 391 01b4 7F2C     		cmp	r4, #127
+ 392 01b6 3BD1     		bne	.L33
+ 467:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 393              		.loc 1 467 0
+ 394 01b8 511C     		adds	r1, r2, #1
+ 471:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 395              		.loc 1 471 0
+ 396 01ba 0238     		subs	r0, r0, #2
+ 472:./la/la_sampling.cpp **** 				{
+ 397              		.loc 1 472 0
+ 398 01bc 0028     		cmp	r0, #0
+ 467:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 399              		.loc 1 467 0
+ 400 01be 02F80860 		strb	r6, [r2, r8]
+ 468:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 401              		.loc 1 468 0
+ 402 01c2 01F808B0 		strb	fp, [r1, r8]
+ 403 01c6 02F10202 		add	r2, r2, #2
+ 472:./la/la_sampling.cpp **** 				{
+ 404              		.loc 1 472 0
+ 405 01ca 0EDC     		bgt	.L34
+ 406 01cc BEF1000F 		cmp	lr, #0
+ 407 01d0 00D0     		beq	.L35
+ 408 01d2 9E60     		str	r6, [r3, #8]
+ 409              	.L35:
+ 410 01d4 0021     		movs	r1, #0
+ 411 01d6 1961     		str	r1, [r3, #16]
+ 412              	.L39:
+ 413 01d8 C3E90520 		strd	r2, r0, [r3, #20]
+ 493:./la/la_sampling.cpp **** 					return;
+ 414              		.loc 1 493 0
+ 415 01dc FFF710FF 		bl	_ZL21SamplingFrameCompeltev
+ 416              	.LVL10:
+ 417              	.L30:
+ 499:./la/la_sampling.cpp **** 			{
+ 500:./la/la_sampling.cpp **** 				rlePtr = 0;
+ 501:./la/la_sampling.cpp **** 			}
+ 502:./la/la_sampling.cpp **** 
+ 503:./la/la_sampling.cpp **** 			rleRepeatCount = 0;
+ 504:./la/la_sampling.cpp **** 			rleValue = newValue;
+ 505:./la/la_sampling.cpp **** 		}
+ 506:./la/la_sampling.cpp **** 	}
+ 507:./la/la_sampling.cpp **** 	while(--n);
+ 508:./la/la_sampling.cpp **** }
+ 418              		.loc 1 508 0
+ 419 01e0 04B0     		add	sp, sp, #16
+ 420              	.LCFI4:
+ 421              		.cfi_remember_state
+ 422              		.cfi_def_cfa_offset 40
+ 423              		@ sp needed
+ 424 01e2 BDE8F14F 		pop	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 425              	.LCFI5:
+ 426              		.cfi_restore 14
+ 427              		.cfi_restore 11
+ 428              		.cfi_restore 10
+ 429              		.cfi_restore 9
+ 430              		.cfi_restore 8
+ 431              		.cfi_restore 7
+ 432              		.cfi_restore 6
+ 433              		.cfi_restore 5
+ 434              		.cfi_restore 4
+ 435              		.cfi_restore 0
+ 436              		.cfi_def_cfa_offset 0
+ 437              	.LVL11:
+ 438 01e6 8546     		mov	sp, r0
+ 439              	.LVL12:
+ 440 01e8 7047     		bx	lr
+ 441              	.LVL13:
+ 442              	.L34:
+ 443              	.LCFI6:
+ 444              		.cfi_restore_state
+ 478:./la/la_sampling.cpp **** 				{
+ 445              		.loc 1 478 0
+ 446 01ea 0121     		movs	r1, #1
+ 447 01ec 5245     		cmp	r2, r10
+ 448 01ee 8C46     		mov	ip, r1
+ 449 01f0 00D3     		bcc	.L46
+ 480:./la/la_sampling.cpp **** 				}
+ 450              		.loc 1 480 0
+ 451 01f2 0022     		movs	r2, #0
+ 452              	.L46:
+ 469:./la/la_sampling.cpp **** 
+ 453              		.loc 1 469 0
+ 454 01f4 0024     		movs	r4, #0
+ 455 01f6 1BE0     		b	.L33
+ 456              	.L32:
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 457              		.loc 1 487 0
+ 458 01f8 511C     		adds	r1, r2, #1
+ 490:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 459              		.loc 1 490 0
+ 460 01fa 0238     		subs	r0, r0, #2
+ 488:./la/la_sampling.cpp **** 
+ 461              		.loc 1 488 0
+ 462 01fc 64F07F0C 		orn	ip, r4, #127
+ 491:./la/la_sampling.cpp **** 				{
+ 463              		.loc 1 491 0
+ 464 0200 0028     		cmp	r0, #0
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 465              		.loc 1 487 0
+ 466 0202 02F80860 		strb	r6, [r2, r8]
+ 488:./la/la_sampling.cpp **** 
+ 467              		.loc 1 488 0
+ 468 0206 01F808C0 		strb	ip, [r1, r8]
+ 469 020a 02F10202 		add	r2, r2, #2
+ 491:./la/la_sampling.cpp **** 				{
+ 470              		.loc 1 491 0
+ 471 020e 08DC     		bgt	.L37
+ 472 0210 BEF1000F 		cmp	lr, #0
+ 473 0214 00D0     		beq	.L38
+ 474 0216 9E60     		str	r6, [r3, #8]
+ 475              	.L38:
+ 476 0218 B9F1000F 		cmp	r9, #0
+ 477 021c DCD0     		beq	.L39
+ 478 021e 1C61     		str	r4, [r3, #16]
+ 479 0220 DAE7     		b	.L39
+ 480              	.L37:
+ 469:./la/la_sampling.cpp **** 
+ 481              		.loc 1 469 0
+ 482 0222 0121     		movs	r1, #1
+ 500:./la/la_sampling.cpp **** 			}
+ 483              		.loc 1 500 0
+ 484 0224 5245     		cmp	r2, r10
+ 485 0226 28BF     		it	cs
+ 486 0228 0022     		movcs	r2, #0
+ 469:./la/la_sampling.cpp **** 
+ 487              		.loc 1 469 0
+ 488 022a 8C46     		mov	ip, r1
+ 503:./la/la_sampling.cpp **** 			rleValue = newValue;
+ 489              		.loc 1 503 0
+ 490 022c 0024     		movs	r4, #0
+ 491 022e 8E46     		mov	lr, r1
+ 492              	.L33:
+ 454:./la/la_sampling.cpp **** 	{
+ 493              		.loc 1 454 0
+ 494 0230 039D     		ldr	r5, [sp, #12]
+ 495              	.LVL14:
+ 496 0232 019F     		ldr	r7, [sp, #4]
+ 456:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 497              		.loc 1 456 0
+ 498 0234 029E     		ldr	r6, [sp, #8]
+ 454:./la/la_sampling.cpp **** 	{
+ 499              		.loc 1 454 0
+ 500 0236 AF42     		cmp	r7, r5
+ 501 0238 4FF00109 		mov	r9, #1
+ 502 023c B0D1     		bne	.L42
+ 503 023e BEF1000F 		cmp	lr, #0
+ 504 0242 00D0     		beq	.L43
+ 505 0244 9E60     		str	r6, [r3, #8]
+ 506              	.L43:
+ 507 0246 1C61     		str	r4, [r3, #16]
+ 508 0248 BCF1000F 		cmp	ip, #0
+ 509 024c 00D0     		beq	.L44
+ 510 024e 5A61     		str	r2, [r3, #20]
+ 511              	.L44:
+ 512 0250 0029     		cmp	r1, #0
+ 513 0252 C5D0     		beq	.L30
+ 514 0254 9861     		str	r0, [r3, #24]
+ 515 0256 C3E7     		b	.L30
+ 516              	.L67:
+ 517              		.align	2
+ 518              	.L66:
+ 519 0258 00640240 		.word	1073898496
+ 520 025c 00000000 		.word	.LANCHOR1
+ 521 0260 00000000 		.word	.LANCHOR0
+ 522 0264 00000000 		.word	samplingRam
+ 523              		.cfi_endproc
+ 524              	.LFE155:
+ 526              		.align	1
+ 527              		.syntax unified
+ 528              		.thumb
+ 529              		.thumb_func
+ 530              		.fpu fpv4-sp-d16
+ 532              	_Z25SamplingRLEFrameInterruptItLm32768ELm32767EEvv:
+ 533              	.LFB156:
+ 397:./la/la_sampling.cpp **** {
+ 534              		.loc 1 397 0
+ 535              		.cfi_startproc
+ 536              		@ Stack Align: May be called with mis-aligned SP.
+ 537              		@ args = 0, pretend = 0, frame = 0
+ 538              		@ frame_needed = 0, uses_anonymous_args = 0
+ 539 0268 6846     		mov	r0, sp
+ 540              		.cfi_register 13, 0
+ 541 026a 20F00701 		bic	r1, r0, #7
+ 542 026e 8D46     		mov	sp, r1
+ 543 0270 2DE9F14F 		push	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 544              	.LCFI7:
+ 545              		.cfi_def_cfa_offset 40
+ 546              		.cfi_offset 13, -40
+ 547              		.cfi_offset 4, -36
+ 548              		.cfi_offset 5, -32
+ 549              		.cfi_offset 6, -28
+ 550              		.cfi_offset 7, -24
+ 551              		.cfi_offset 8, -20
+ 552              		.cfi_offset 9, -16
+ 553              		.cfi_offset 10, -12
+ 554              		.cfi_offset 11, -8
+ 555              		.cfi_offset 14, -4
+ 399:./la/la_sampling.cpp **** 
+ 556              		.loc 1 399 0
+ 557 0274 284B     		ldr	r3, .L85
+ 402:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 558              		.loc 1 402 0
+ 559 0276 2948     		ldr	r0, .L85+4
+ 560 0278 2949     		ldr	r1, .L85+8
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 561              		.loc 1 430 0
+ 562 027a 2A4F     		ldr	r7, .L85+12
+ 399:./la/la_sampling.cpp **** 
+ 563              		.loc 1 399 0
+ 564 027c 4FF40062 		mov	r2, #2048
+ 565 0280 DA60     		str	r2, [r3, #12]
+ 402:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 566              		.loc 1 402 0
+ 567 0282 D3F88820 		ldr	r2, [r3, #136]
+ 568 0286 00F50073 		add	r3, r0, #512
+ 569 028a 12F4002F 		tst	r2, #524288
+ 570 028e 18BF     		it	ne
+ 571 0290 1846     		movne	r0, r3
+ 432:./la/la_sampling.cpp **** 			{
+ 572              		.loc 1 432 0
+ 573 0292 D1E9026E 		ldrd	r6, lr, [r1, #8]
+ 574 0296 D1E90423 		ldrd	r2, r3, [r1, #16]
+ 575 029a 0024     		movs	r4, #0
+ 576 029c 00F5807A 		add	r10, r0, #256
+ 577 02a0 A446     		mov	ip, r4
+ 578 02a2 47F6FF79 		movw	r9, #32767
+ 431:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 579              		.loc 1 431 0
+ 580 02a6 07F10208 		add	r8, r7, #2
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 581              		.loc 1 420 0
+ 582 02aa 4FF6FF7B 		movw	fp, #65535
+ 583              	.L73:
+ 584              	.LVL15:
+ 585 02ae 30F8025B 		ldrh	r5, [r0], #2
+ 586              	.LVL16:
+ 587 02b2 C5F30E05 		ubfx	r5, r5, #0, #15
+ 588              	.LVL17:
+ 414:./la/la_sampling.cpp **** 		{
+ 589              		.loc 1 414 0
+ 590 02b6 B542     		cmp	r5, r6
+ 591 02b8 0FD1     		bne	.L70
+ 416:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 592              		.loc 1 416 0
+ 593 02ba 0132     		adds	r2, r2, #1
+ 417:./la/la_sampling.cpp **** 			{
+ 594              		.loc 1 417 0
+ 595 02bc 4A45     		cmp	r2, r9
+ 596 02be 1CD1     		bne	.L71
+ 419:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 597              		.loc 1 419 0
+ 598 02c0 5A00     		lsls	r2, r3, #1
+ 599 02c2 27F81360 		strh	r6, [r7, r3, lsl #1]	@ movhi
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 600              		.loc 1 420 0
+ 601 02c6 0233     		adds	r3, r3, #2
+ 422:./la/la_sampling.cpp **** 				{
+ 602              		.loc 1 422 0
+ 603 02c8 7345     		cmp	r3, lr
+ 420:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 604              		.loc 1 420 0
+ 605 02ca 22F808B0 		strh	fp, [r2, r8]	@ movhi
+ 422:./la/la_sampling.cpp **** 				{
+ 606              		.loc 1 422 0
+ 607 02ce 4FF00104 		mov	r4, #1
+ 608 02d2 00D3     		bcc	.L77
+ 424:./la/la_sampling.cpp **** 				}
+ 609              		.loc 1 424 0
+ 610 02d4 0023     		movs	r3, #0
+ 611              	.L77:
+ 421:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 612              		.loc 1 421 0
+ 613 02d6 0022     		movs	r2, #0
+ 614 02d8 0FE0     		b	.L71
+ 615              	.L70:
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 616              		.loc 1 430 0
+ 617 02da 5C00     		lsls	r4, r3, #1
+ 431:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 618              		.loc 1 431 0
+ 619 02dc 6FEA4242 		mvn	r2, r2, lsl #17
+ 620 02e0 6FEA5242 		mvn	r2, r2, lsr #17
+ 430:./la/la_sampling.cpp **** 			store[rlePtr++] = rleRepeatCount | FLAG;
+ 621              		.loc 1 430 0
+ 622 02e4 27F81360 		strh	r6, [r7, r3, lsl #1]	@ movhi
+ 431:./la/la_sampling.cpp **** 			if(rlePtr >= transferCount)
+ 623              		.loc 1 431 0
+ 624 02e8 24F80820 		strh	r2, [r4, r8]	@ movhi
+ 625 02ec 0233     		adds	r3, r3, #2
+ 421:./la/la_sampling.cpp **** 				if(rlePtr >= transferCount)
+ 626              		.loc 1 421 0
+ 627 02ee 0124     		movs	r4, #1
+ 434:./la/la_sampling.cpp **** 			}
+ 628              		.loc 1 434 0
+ 629 02f0 7345     		cmp	r3, lr
+ 630 02f2 28BF     		it	cs
+ 631 02f4 0023     		movcs	r3, #0
+ 437:./la/la_sampling.cpp **** 			rleValue = newValue;
+ 632              		.loc 1 437 0
+ 633 02f6 0022     		movs	r2, #0
+ 634 02f8 A446     		mov	ip, r4
+ 635              	.L71:
+ 406:./la/la_sampling.cpp **** 	{
+ 636              		.loc 1 406 0
+ 637 02fa 5045     		cmp	r0, r10
+ 408:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 638              		.loc 1 408 0
+ 639 02fc 2E46     		mov	r6, r5
+ 406:./la/la_sampling.cpp **** 	{
+ 640              		.loc 1 406 0
+ 641 02fe D6D1     		bne	.L73
+ 642 0300 BCF1000F 		cmp	ip, #0
+ 643 0304 00D0     		beq	.L74
+ 644 0306 8D60     		str	r5, [r1, #8]
+ 645              	.L74:
+ 646 0308 0A61     		str	r2, [r1, #16]
+ 647 030a 04B1     		cbz	r4, .L68
+ 648 030c 4B61     		str	r3, [r1, #20]
+ 649              	.L68:
+ 442:./la/la_sampling.cpp **** 
+ 650              		.loc 1 442 0
+ 651 030e BDE8F14F 		pop	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 652              	.LCFI8:
+ 653              		.cfi_restore 14
+ 654              		.cfi_restore 11
+ 655              		.cfi_restore 10
+ 656              		.cfi_restore 9
+ 657              		.cfi_restore 8
+ 658              		.cfi_restore 7
+ 659              		.cfi_restore 6
+ 660              		.cfi_restore 5
+ 661              		.cfi_restore 4
+ 662              		.cfi_restore 0
+ 663              		.cfi_def_cfa_offset 0
+ 664              	.LVL18:
+ 665 0312 8546     		mov	sp, r0
+ 666 0314 7047     		bx	lr
+ 667              	.L86:
+ 668 0316 00BF     		.align	2
+ 669              	.L85:
+ 670 0318 00640240 		.word	1073898496
+ 671 031c 00000000 		.word	.LANCHOR1
+ 672 0320 00000000 		.word	.LANCHOR0
+ 673 0324 00000000 		.word	samplingRam
+ 674              		.cfi_endproc
+ 675              	.LFE156:
+ 677              		.align	1
+ 678              		.syntax unified
+ 679              		.thumb
+ 680              		.thumb_func
+ 681              		.fpu fpv4-sp-d16
+ 683              	_Z29SamplingRLETailFrameInterruptItLm32768ELm32767EEvv:
+ 684              	.LFB157:
+ 445:./la/la_sampling.cpp **** {
+ 685              		.loc 1 445 0
+ 686              		.cfi_startproc
+ 687              		@ Stack Align: May be called with mis-aligned SP.
+ 688              		@ args = 0, pretend = 0, frame = 16
+ 689              		@ frame_needed = 0, uses_anonymous_args = 0
+ 690 0328 6846     		mov	r0, sp
+ 691              		.cfi_register 13, 0
+ 692 032a 20F00701 		bic	r1, r0, #7
+ 693 032e 8D46     		mov	sp, r1
+ 694 0330 2DE9F14F 		push	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 695              	.LCFI9:
+ 696              		.cfi_def_cfa_offset 40
+ 697              		.cfi_offset 13, -40
+ 698              		.cfi_offset 4, -36
+ 699              		.cfi_offset 5, -32
+ 700              		.cfi_offset 6, -28
+ 701              		.cfi_offset 7, -24
+ 702              		.cfi_offset 8, -20
+ 703              		.cfi_offset 9, -16
+ 704              		.cfi_offset 10, -12
+ 705              		.cfi_offset 11, -8
+ 706              		.cfi_offset 14, -4
+ 447:./la/la_sampling.cpp **** 
+ 707              		.loc 1 447 0
+ 708 0334 414B     		ldr	r3, .L123
+ 450:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 709              		.loc 1 450 0
+ 710 0336 424D     		ldr	r5, .L123+4
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 711              		.loc 1 487 0
+ 712 0338 DFF80C81 		ldr	r8, .L123+12
+ 447:./la/la_sampling.cpp **** 
+ 713              		.loc 1 447 0
+ 714 033c 4FF40062 		mov	r2, #2048
+ 715 0340 DA60     		str	r2, [r3, #12]
+ 450:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 716              		.loc 1 450 0
+ 717 0342 D3F88820 		ldr	r2, [r3, #136]
+ 445:./la/la_sampling.cpp **** {
+ 718              		.loc 1 445 0
+ 719 0346 84B0     		sub	sp, sp, #16
+ 720              	.LCFI10:
+ 721              		.cfi_def_cfa_offset 56
+ 450:./la/la_sampling.cpp **** 	int n = MAX_RLE_SAMPLE_COUNT;
+ 722              		.loc 1 450 0
+ 723 0348 12F4002F 		tst	r2, #524288
+ 724 034c 05F50073 		add	r3, r5, #512
+ 725 0350 08BF     		it	eq
+ 726 0352 2B46     		moveq	r3, r5
+ 727 0354 0193     		str	r3, [sp, #4]
+ 728 0356 0199     		ldr	r1, [sp, #4]
+ 729 0358 3A4B     		ldr	r3, .L123+8
+ 730 035a 01F58071 		add	r1, r1, #256
+ 498:./la/la_sampling.cpp **** 			{
+ 731              		.loc 1 498 0
+ 732 035e D3E9026A 		ldrd	r6, r10, [r3, #8]
+ 733 0362 D3E90520 		ldrd	r2, r0, [r3, #20]
+ 734 0366 0391     		str	r1, [sp, #12]
+ 735 0368 1C69     		ldr	r4, [r3, #16]
+ 736 036a 0021     		movs	r1, #0
+ 737 036c 8C46     		mov	ip, r1
+ 738 036e 8946     		mov	r9, r1
+ 739 0370 8E46     		mov	lr, r1
+ 488:./la/la_sampling.cpp **** 
+ 740              		.loc 1 488 0
+ 741 0372 08F1020B 		add	fp, r8, #2
+ 742              	.L99:
+ 743              	.LVL19:
+ 744 0376 019D     		ldr	r5, [sp, #4]
+ 745 0378 35F8027B 		ldrh	r7, [r5], #2
+ 746 037c 0195     		str	r5, [sp, #4]
+ 747              	.LVL20:
+ 748 037e C7F30E05 		ubfx	r5, r7, #0, #15
+ 749              	.LVL21:
+ 462:./la/la_sampling.cpp **** 		{
+ 750              		.loc 1 462 0
+ 751 0382 B542     		cmp	r5, r6
+ 752 0384 0295     		str	r5, [sp, #8]
+ 753              	.LVL22:
+ 754 0386 26D1     		bne	.L89
+ 464:./la/la_sampling.cpp **** 			if(MAX_COUNT == rleRepeatCount)//repeat count overflow
+ 755              		.loc 1 464 0
+ 756 0388 0134     		adds	r4, r4, #1
+ 465:./la/la_sampling.cpp **** 			{
+ 757              		.loc 1 465 0
+ 758 038a 47F6FF75 		movw	r5, #32767
+ 759              	.LVL23:
+ 760 038e AC42     		cmp	r4, r5
+ 761 0390 3FD1     		bne	.L90
+ 467:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 762              		.loc 1 467 0
+ 763 0392 5100     		lsls	r1, r2, #1
+ 471:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 764              		.loc 1 471 0
+ 765 0394 0238     		subs	r0, r0, #2
+ 468:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 766              		.loc 1 468 0
+ 767 0396 4FF0FF34 		mov	r4, #-1	@ movhi
+ 472:./la/la_sampling.cpp **** 				{
+ 768              		.loc 1 472 0
+ 769 039a 0028     		cmp	r0, #0
+ 467:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 770              		.loc 1 467 0
+ 771 039c 28F81260 		strh	r6, [r8, r2, lsl #1]	@ movhi
+ 468:./la/la_sampling.cpp **** 				rleRepeatCount = 0;
+ 772              		.loc 1 468 0
+ 773 03a0 21F80B40 		strh	r4, [r1, fp]	@ movhi
+ 774 03a4 02F10202 		add	r2, r2, #2
+ 472:./la/la_sampling.cpp **** 				{
+ 775              		.loc 1 472 0
+ 776 03a8 0EDC     		bgt	.L91
+ 777 03aa BEF1000F 		cmp	lr, #0
+ 778 03ae 00D0     		beq	.L92
+ 779 03b0 9E60     		str	r6, [r3, #8]
+ 780              	.L92:
+ 781 03b2 0021     		movs	r1, #0
+ 782 03b4 1961     		str	r1, [r3, #16]
+ 783              	.L96:
+ 784 03b6 C3E90520 		strd	r2, r0, [r3, #20]
+ 493:./la/la_sampling.cpp **** 					return;
+ 785              		.loc 1 493 0
+ 786 03ba FFF721FE 		bl	_ZL21SamplingFrameCompeltev
+ 787              	.LVL24:
+ 788              	.L87:
+ 789              		.loc 1 508 0
+ 790 03be 04B0     		add	sp, sp, #16
+ 791              	.LCFI11:
+ 792              		.cfi_remember_state
+ 793              		.cfi_def_cfa_offset 40
+ 794              		@ sp needed
+ 795 03c0 BDE8F14F 		pop	{r0, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 796              	.LCFI12:
+ 797              		.cfi_restore 14
+ 798              		.cfi_restore 11
+ 799              		.cfi_restore 10
+ 800              		.cfi_restore 9
+ 801              		.cfi_restore 8
+ 802              		.cfi_restore 7
+ 803              		.cfi_restore 6
+ 804              		.cfi_restore 5
+ 805              		.cfi_restore 4
+ 806              		.cfi_restore 0
+ 807              		.cfi_def_cfa_offset 0
+ 808              	.LVL25:
+ 809 03c4 8546     		mov	sp, r0
+ 810              	.LVL26:
+ 811 03c6 7047     		bx	lr
+ 812              	.L91:
+ 813              	.LCFI13:
+ 814              		.cfi_restore_state
+ 478:./la/la_sampling.cpp **** 				{
+ 815              		.loc 1 478 0
+ 816 03c8 0121     		movs	r1, #1
+ 817 03ca 5245     		cmp	r2, r10
+ 818 03cc 8C46     		mov	ip, r1
+ 819 03ce 00D3     		bcc	.L103
+ 480:./la/la_sampling.cpp **** 				}
+ 820              		.loc 1 480 0
+ 821 03d0 0022     		movs	r2, #0
+ 822              	.L103:
+ 469:./la/la_sampling.cpp **** 
+ 823              		.loc 1 469 0
+ 824 03d2 0024     		movs	r4, #0
+ 825 03d4 1DE0     		b	.L90
+ 826              	.LVL27:
+ 827              	.L89:
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 828              		.loc 1 487 0
+ 829 03d6 5100     		lsls	r1, r2, #1
+ 488:./la/la_sampling.cpp **** 
+ 830              		.loc 1 488 0
+ 831 03d8 6FEA444C 		mvn	ip, r4, lsl #17
+ 490:./la/la_sampling.cpp **** 				if(rleDelayCount <= 0)
+ 832              		.loc 1 490 0
+ 833 03dc 0238     		subs	r0, r0, #2
+ 488:./la/la_sampling.cpp **** 
+ 834              		.loc 1 488 0
+ 835 03de 6FEA5C4C 		mvn	ip, ip, lsr #17
+ 491:./la/la_sampling.cpp **** 				{
+ 836              		.loc 1 491 0
+ 837 03e2 0028     		cmp	r0, #0
+ 487:./la/la_sampling.cpp **** 				store[rlePtr++] = rleRepeatCount | FLAG;
+ 838              		.loc 1 487 0
+ 839 03e4 28F81260 		strh	r6, [r8, r2, lsl #1]	@ movhi
+ 488:./la/la_sampling.cpp **** 
+ 840              		.loc 1 488 0
+ 841 03e8 21F80BC0 		strh	ip, [r1, fp]	@ movhi
+ 842 03ec 02F10202 		add	r2, r2, #2
+ 491:./la/la_sampling.cpp **** 				{
+ 843              		.loc 1 491 0
+ 844 03f0 08DC     		bgt	.L94
+ 845 03f2 BEF1000F 		cmp	lr, #0
+ 846 03f6 00D0     		beq	.L95
+ 847 03f8 9E60     		str	r6, [r3, #8]
+ 848              	.L95:
+ 849 03fa B9F1000F 		cmp	r9, #0
+ 850 03fe DAD0     		beq	.L96
+ 851 0400 1C61     		str	r4, [r3, #16]
+ 852 0402 D8E7     		b	.L96
+ 853              	.L94:
+ 469:./la/la_sampling.cpp **** 
+ 854              		.loc 1 469 0
+ 855 0404 0121     		movs	r1, #1
+ 500:./la/la_sampling.cpp **** 			}
+ 856              		.loc 1 500 0
+ 857 0406 5245     		cmp	r2, r10
+ 858 0408 28BF     		it	cs
+ 859 040a 0022     		movcs	r2, #0
+ 469:./la/la_sampling.cpp **** 
+ 860              		.loc 1 469 0
+ 861 040c 8C46     		mov	ip, r1
+ 503:./la/la_sampling.cpp **** 			rleValue = newValue;
+ 862              		.loc 1 503 0
+ 863 040e 0024     		movs	r4, #0
+ 864 0410 8E46     		mov	lr, r1
+ 865              	.LVL28:
+ 866              	.L90:
+ 454:./la/la_sampling.cpp **** 	{
+ 867              		.loc 1 454 0
+ 868 0412 039D     		ldr	r5, [sp, #12]
+ 869 0414 019F     		ldr	r7, [sp, #4]
+ 456:./la/la_sampling.cpp **** #ifndef SAMPLING_RLE_FORCE_ZERO_ON_MSB
+ 870              		.loc 1 456 0
+ 871 0416 029E     		ldr	r6, [sp, #8]
+ 454:./la/la_sampling.cpp **** 	{
+ 872              		.loc 1 454 0
+ 873 0418 AF42     		cmp	r7, r5
+ 874 041a 4FF00109 		mov	r9, #1
+ 875 041e AAD1     		bne	.L99
+ 876 0420 BEF1000F 		cmp	lr, #0
+ 877 0424 00D0     		beq	.L100
+ 878 0426 9E60     		str	r6, [r3, #8]
+ 879              	.L100:
+ 880 0428 1C61     		str	r4, [r3, #16]
+ 881 042a BCF1000F 		cmp	ip, #0
+ 882 042e 00D0     		beq	.L101
+ 883 0430 5A61     		str	r2, [r3, #20]
+ 884              	.L101:
+ 885 0432 0029     		cmp	r1, #0
+ 886 0434 C3D0     		beq	.L87
+ 887 0436 9861     		str	r0, [r3, #24]
+ 888 0438 C1E7     		b	.L87
+ 889              	.L124:
+ 890 043a 00BF     		.align	2
+ 891              	.L123:
+ 892 043c 00640240 		.word	1073898496
+ 893 0440 00000000 		.word	.LANCHOR1
+ 894 0444 00000000 		.word	.LANCHOR0
+ 895 0448 00000000 		.word	samplingRam
+ 896              		.cfi_endproc
+ 897              	.LFE157:
+ 899              		.align	1
+ 900              		.syntax unified
+ 901              		.thumb
+ 902              		.thumb_func
+ 903              		.fpu fpv4-sp-d16
+ 905              	_ZL33SamplingRLEExternalEventInterruptv:
+ 906              	.LFB150:
+ 377:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;
+ 907              		.loc 1 377 0
+ 908              		.cfi_startproc
+ 909              		@ args = 0, pretend = 0, frame = 0
+ 910              		@ frame_needed = 0, uses_anonymous_args = 0
+ 911              		@ link register save eliminated.
+ 378:./la/la_sampling.cpp **** 	__DSB();
+ 912              		.loc 1 378 0
+ 913 044c 084B     		ldr	r3, .L126
+ 914 044e 4FF0FF32 		mov	r2, #-1
+ 915 0452 5A61     		str	r2, [r3, #20]
+ 916              	.LBB28:
+ 917              	.LBB29:
+ 918              		.loc 2 326 0
+ 919              		.syntax unified
+ 920              	@ 326 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h" 1
+ 921 0454 BFF34F8F 		dsb
+ 922              	@ 0 "" 2
+ 923              		.thumb
+ 924              		.syntax unified
+ 925              	.LBE29:
+ 926              	.LBE28:
+ 380:./la/la_sampling.cpp **** 	rleDelayCount = delayCount;
+ 927              		.loc 1 380 0
+ 928 0458 0022     		movs	r2, #0
+ 929 045a 1A60     		str	r2, [r3]
+ 381:./la/la_sampling.cpp **** 	rleTailSampling = true;
+ 930              		.loc 1 381 0
+ 931 045c 054B     		ldr	r3, .L126+4
+ 932 045e DA69     		ldr	r2, [r3, #28]
+ 933 0460 9A61     		str	r2, [r3, #24]
+ 383:./la/la_sampling.cpp **** 	InterruptController::SetHandler(DMA2_Stream5_IRQn, samplingRLETailFrameInterrupt);
+ 934              		.loc 1 383 0
+ 935 0462 054A     		ldr	r2, .L126+8
+ 936 0464 1021     		movs	r1, #16
+ 937 0466 D160     		str	r1, [r2, #12]
+ 384:./la/la_sampling.cpp **** }
+ 938              		.loc 1 384 0
+ 939 0468 196A     		ldr	r1, [r3, #32]
+ 940 046a 4420     		movs	r0, #68
+ 941 046c FFF7FEBF 		b	_ZN19InterruptController10SetHandlerE4IRQnPFvvE
+ 942              	.LVL29:
+ 943              	.L127:
+ 944              		.align	2
+ 945              	.L126:
+ 946 0470 003C0140 		.word	1073822720
+ 947 0474 00000000 		.word	.LANCHOR0
+ 948 0478 000C0240 		.word	1073875968
+ 949              		.cfi_endproc
+ 950              	.LFE150:
+ 952              		.section	.text._ZN19InterruptController13EnableChannelE4IRQnhhPFvvE,"axG",%progbits,_ZN19Interrupt
+ 953              		.align	1
+ 954              		.weak	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 955              		.syntax unified
+ 956              		.thumb
+ 957              		.thumb_func
+ 958              		.fpu fpv4-sp-d16
+ 960              	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE:
+ 961              	.LFB112:
+ 962              		.file 3 "./nvic.h"
+   1:./nvic.h      **** /*
+   2:./nvic.h      ****  * nvic.h
+   3:./nvic.h      ****  *
+   4:./nvic.h      ****  *  Created on: 09.12.2009
+   5:./nvic.h      ****  *      Author: Flexz
+   6:./nvic.h      ****  */
+   7:./nvic.h      **** 
+   8:./nvic.h      **** #ifndef NVIC_H_
+   9:./nvic.h      **** #define NVIC_H_
+  10:./nvic.h      **** 
+  11:./nvic.h      **** //#include "stm32f10x.h"
+  12:./nvic.h      **** //#include "peripheral.h"
+  13:./nvic.h      **** #include <misc.h>
+  14:./nvic.h      **** 
+  15:./nvic.h      **** #define AIRCR_VECTKEY_MASK		((uint32_t)0x05FA0000)
+  16:./nvic.h      **** #define AIRCR_SYSRESETREQ		((uint32_t)0x00000004)
+  17:./nvic.h      **** 
+  18:./nvic.h      **** typedef void (*InterruptHandler)(void);
+  19:./nvic.h      **** 
+  20:./nvic.h      **** //Управление прерываниями: включение, выключение, настройка
+  21:./nvic.h      **** class InterruptController
+  22:./nvic.h      **** {
+  23:./nvic.h      **** public:
+  24:./nvic.h      **** 	//Включает прерывание
+  25:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel)
+  26:./nvic.h      **** 	{
+  27:./nvic.h      **** 	    /* Enable the Selected IRQ Channels --------------------------------------*/
+  28:./nvic.h      **** 	    NVIC->ISER[irqChannel >> 0x05] =
+  29:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+  30:./nvic.h      **** 	}
+  31:./nvic.h      **** 	//Включает прерывание и задает приоритет
+  32:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority)
+  33:./nvic.h      **** 	{
+  34:./nvic.h      **** 		SetChannelPriority(irqChannel, priority, subpriority);
+  35:./nvic.h      **** 	    EnableChannel(irqChannel);
+  36:./nvic.h      **** 	}
+  37:./nvic.h      **** 	//Включает прерывание, задает приоритет и устанавливает обрабочик
+  38:./nvic.h      **** 	static void EnableChannel(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority, InterruptHa
+ 963              		.loc 3 38 0
+ 964              		.cfi_startproc
+ 965              		@ args = 0, pretend = 0, frame = 0
+ 966              		@ frame_needed = 0, uses_anonymous_args = 0
+ 967              	.LVL30:
+ 968 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 969              	.LCFI14:
+ 970              		.cfi_def_cfa_offset 24
+ 971              		.cfi_offset 4, -24
+ 972              		.cfi_offset 5, -20
+ 973              		.cfi_offset 6, -16
+ 974              		.cfi_offset 7, -12
+ 975              		.cfi_offset 8, -8
+ 976              		.cfi_offset 14, -4
+ 977              	.LBB38:
+ 978              	.LBB39:
+  39:./nvic.h      **** 	{
+  40:./nvic.h      **** 		DisableChannel(irqChannel);
+  41:./nvic.h      **** 		SetHandler(irqChannel, handler);
+  42:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+  43:./nvic.h      **** 	}
+  44:./nvic.h      **** 	//Отключает прерывание
+  45:./nvic.h      **** 	static void DisableChannel(IRQn_Type irqChannel)
+  46:./nvic.h      **** 	{
+  47:./nvic.h      **** 	    NVIC->ICER[irqChannel >> 0x05] =
+ 979              		.loc 3 47 0
+ 980 0004 4511     		asrs	r5, r0, #5
+ 981 0006 AD00     		lsls	r5, r5, #2
+ 982 0008 05F16045 		add	r5, r5, #-536870912
+ 983              	.LBE39:
+ 984              	.LBE38:
+  38:./nvic.h      **** 	{
+ 985              		.loc 3 38 0
+ 986 000c 9046     		mov	r8, r2
+ 987 000e 05F56145 		add	r5, r5, #57600
+ 988              	.LBB42:
+ 989              	.LBB40:
+  48:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+ 990              		.loc 3 48 0
+ 991 0012 00F01F02 		and	r2, r0, #31
+ 992              	.LVL31:
+ 993 0016 0127     		movs	r7, #1
+ 994 0018 9740     		lsls	r7, r7, r2
+ 995              	.LBE40:
+ 996              	.LBE42:
+  38:./nvic.h      **** 	{
+ 997              		.loc 3 38 0
+ 998 001a 0C46     		mov	r4, r1
+ 999              	.LBB43:
+ 1000              	.LBB41:
+  47:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+ 1001              		.loc 3 47 0
+ 1002 001c C5F88070 		str	r7, [r5, #128]
+ 1003              	.LBE41:
+ 1004              	.LBE43:
+  41:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+ 1005              		.loc 3 41 0
+ 1006 0020 1946     		mov	r1, r3
+ 1007              	.LVL32:
+  38:./nvic.h      **** 	{
+ 1008              		.loc 3 38 0
+ 1009 0022 0646     		mov	r6, r0
+ 1010              	.LVL33:
+  41:./nvic.h      **** 		EnableChannel(irqChannel, priority, subpriority);
+ 1011              		.loc 3 41 0
+ 1012 0024 FFF7FEFF 		bl	_ZN19InterruptController10SetHandlerE4IRQnPFvvE
+ 1013              	.LVL34:
+ 1014              	.LBB44:
+ 1015              	.LBB45:
+ 1016              	.LBB46:
+  49:./nvic.h      **** 	}
+  50:./nvic.h      **** 	static void SetChannelPriority(IRQn_Type irqChannel, uint8_t priority, uint8_t subpriority)
+  51:./nvic.h      **** 	{
+  52:./nvic.h      **** 	#ifdef STM32L1XX
+  53:./nvic.h      **** 		NVIC->IP[(uint32_t)(irqChannel)] = ((priority << (8 - __NVIC_PRIO_BITS)) & 0xff);
+  54:./nvic.h      **** 	#else
+  55:./nvic.h      **** 		uint32_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
+  56:./nvic.h      **** 		/* Compute the Corresponding IRQ Priority --------------------------------*/
+  57:./nvic.h      **** 		tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
+ 1017              		.loc 3 57 0
+ 1018 0028 0B4B     		ldr	r3, .L129
+ 1019 002a DB68     		ldr	r3, [r3, #12]
+ 1020 002c DB43     		mvns	r3, r3
+ 1021 002e C3F30223 		ubfx	r3, r3, #8, #3
+ 1022              	.LVL35:
+  58:./nvic.h      **** 		tmppre = (0x4 - tmppriority);
+ 1023              		.loc 3 58 0
+ 1024 0032 C3F10402 		rsb	r2, r3, #4
+ 1025              	.LVL36:
+  59:./nvic.h      **** 		tmpsub = tmpsub >> tmppriority;
+  60:./nvic.h      **** 
+  61:./nvic.h      **** 		tmppriority = (uint32_t)priority << tmppre;
+ 1026              		.loc 3 61 0
+ 1027 0036 9440     		lsls	r4, r4, r2
+ 1028              	.LVL37:
+  59:./nvic.h      **** 		tmpsub = tmpsub >> tmppriority;
+ 1029              		.loc 3 59 0
+ 1030 0038 0F22     		movs	r2, #15
+ 1031              	.LVL38:
+ 1032 003a DA40     		lsrs	r2, r2, r3
+ 1033              	.LVL39:
+  62:./nvic.h      **** 		tmppriority |=  subpriority & tmpsub;
+ 1034              		.loc 3 62 0
+ 1035 003c 02EA0802 		and	r2, r2, r8
+ 1036              	.LVL40:
+ 1037 0040 1443     		orrs	r4, r4, r2
+ 1038              	.LVL41:
+  63:./nvic.h      **** 		tmppriority = tmppriority << 0x04;
+  64:./nvic.h      **** 		NVIC->IP[irqChannel] = tmppriority;
+ 1039              		.loc 3 64 0
+ 1040 0042 06F16046 		add	r6, r6, #-536870912
+ 1041              	.LVL42:
+  63:./nvic.h      **** 		tmppriority = tmppriority << 0x04;
+ 1042              		.loc 3 63 0
+ 1043 0046 2401     		lsls	r4, r4, #4
+ 1044              	.LVL43:
+ 1045              		.loc 3 64 0
+ 1046 0048 06F56146 		add	r6, r6, #57600
+ 1047              	.LVL44:
+ 1048 004c E4B2     		uxtb	r4, r4
+ 1049              	.LVL45:
+ 1050 004e 86F80043 		strb	r4, [r6, #768]
+ 1051              	.LVL46:
+ 1052              	.LBE46:
+ 1053              	.LBE45:
+ 1054              	.LBB47:
+ 1055              	.LBB48:
+  28:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+ 1056              		.loc 3 28 0
+ 1057 0052 2F60     		str	r7, [r5]
+ 1058              	.LVL47:
+ 1059              	.LBE48:
+ 1060              	.LBE47:
+ 1061              	.LBE44:
+  43:./nvic.h      **** 	//Отключает прерывание
+ 1062              		.loc 3 43 0
+ 1063 0054 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1064              	.L130:
+ 1065              		.align	2
+ 1066              	.L129:
+ 1067 0058 00ED00E0 		.word	-536810240
+ 1068              		.cfi_endproc
+ 1069              	.LFE112:
+ 1071              		.text
+ 1072              		.align	1
+ 1073              		.global	_ZN7Sampler13SetBufferSizeEm
+ 1074              		.syntax unified
+ 1075              		.thumb
+ 1076              		.thumb_func
+ 1077              		.fpu fpv4-sp-d16
+ 1079              	_ZN7Sampler13SetBufferSizeEm:
+ 1080              	.LFB129:
+  50:./la/la_sampling.cpp **** 	transferCount = value;
+ 1081              		.loc 1 50 0
+ 1082              		.cfi_startproc
+ 1083              		@ args = 0, pretend = 0, frame = 0
+ 1084              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1085              		@ link register save eliminated.
+ 1086              	.LVL48:
+  51:./la/la_sampling.cpp **** }
+ 1087              		.loc 1 51 0
+ 1088 047c 014B     		ldr	r3, .L132
+ 1089 047e D960     		str	r1, [r3, #12]
+  52:./la/la_sampling.cpp **** void Sampler::SetDelayCount(uint32_t value)
+ 1090              		.loc 1 52 0
+ 1091 0480 7047     		bx	lr
+ 1092              	.L133:
+ 1093 0482 00BF     		.align	2
+ 1094              	.L132:
+ 1095 0484 00000000 		.word	.LANCHOR0
+ 1096              		.cfi_endproc
+ 1097              	.LFE129:
+ 1099              		.align	1
+ 1100              		.global	_ZN7Sampler13SetDelayCountEm
+ 1101              		.syntax unified
+ 1102              		.thumb
+ 1103              		.thumb_func
+ 1104              		.fpu fpv4-sp-d16
+ 1106              	_ZN7Sampler13SetDelayCountEm:
+ 1107              	.LFB130:
+  54:./la/la_sampling.cpp **** 	delayCount = value & 0xfffffffe;
+ 1108              		.loc 1 54 0
+ 1109              		.cfi_startproc
+ 1110              		@ args = 0, pretend = 0, frame = 0
+ 1111              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1112              		@ link register save eliminated.
+ 1113              	.LVL49:
+  55:./la/la_sampling.cpp **** 	rleDelayCount = value & 0xfffffffe;
+ 1114              		.loc 1 55 0
+ 1115 0488 024B     		ldr	r3, .L135
+ 1116 048a 21F00101 		bic	r1, r1, #1
+ 1117              	.LVL50:
+  56:./la/la_sampling.cpp **** }
+ 1118              		.loc 1 56 0
+ 1119 048e C3E90611 		strd	r1, r1, [r3, #24]
+  57:./la/la_sampling.cpp **** 
+ 1120              		.loc 1 57 0
+ 1121 0492 7047     		bx	lr
+ 1122              	.L136:
+ 1123              		.align	2
+ 1124              	.L135:
+ 1125 0494 00000000 		.word	.LANCHOR0
+ 1126              		.cfi_endproc
+ 1127              	.LFE130:
+ 1129              		.align	1
+ 1130              		.global	_ZN7Sampler18SetupSamplingTimerEv
+ 1131              		.syntax unified
+ 1132              		.thumb
+ 1133              		.thumb_func
+ 1134              		.fpu fpv4-sp-d16
+ 1136              	_ZN7Sampler18SetupSamplingTimerEv:
+ 1137              	.LFB131:
+  60:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM1EN, ENABLE);
+ 1138              		.loc 1 60 0
+ 1139              		.cfi_startproc
+ 1140              		@ args = 0, pretend = 0, frame = 0
+ 1141              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1142              	.LVL51:
+  61:./la/la_sampling.cpp **** 	//Main sampling timer
+ 1143              		.loc 1 61 0
+ 1144 0498 0121     		movs	r1, #1
+  60:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM1EN, ENABLE);
+ 1145              		.loc 1 60 0
+ 1146 049a 10B5     		push	{r4, lr}
+ 1147              	.LCFI15:
+ 1148              		.cfi_def_cfa_offset 8
+ 1149              		.cfi_offset 4, -8
+ 1150              		.cfi_offset 14, -4
+  60:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM1EN, ENABLE);
+ 1151              		.loc 1 60 0
+ 1152 049c 0446     		mov	r4, r0
+  61:./la/la_sampling.cpp **** 	//Main sampling timer
+ 1153              		.loc 1 61 0
+ 1154 049e 0846     		mov	r0, r1
+ 1155              	.LVL52:
+ 1156 04a0 FFF7FEFF 		bl	RCC_APB2PeriphClockCmd
+ 1157              	.LVL53:
+  63:./la/la_sampling.cpp **** 	TIM1->SR &= ~TIM_SR_UIF;
+ 1158              		.loc 1 63 0
+ 1159 04a4 0A4B     		ldr	r3, .L138
+ 1160 04a6 0021     		movs	r1, #0
+ 1161 04a8 9981     		strh	r1, [r3, #12]	@ movhi
+  64:./la/la_sampling.cpp **** 	TIM1->CNT = 0;
+ 1162              		.loc 1 64 0
+ 1163 04aa 1A8A     		ldrh	r2, [r3, #16]
+ 1164 04ac 22F00102 		bic	r2, r2, #1
+ 1165 04b0 1204     		lsls	r2, r2, #16
+ 1166 04b2 120C     		lsrs	r2, r2, #16
+ 1167 04b4 1A82     		strh	r2, [r3, #16]	@ movhi
+  67:./la/la_sampling.cpp **** 	TIM1->ARR = period;//actual period is +1 of this value
+ 1168              		.loc 1 67 0
+ 1169 04b6 0422     		movs	r2, #4
+  65:./la/la_sampling.cpp **** 	TIM1->PSC = 0;
+ 1170              		.loc 1 65 0
+ 1171 04b8 5962     		str	r1, [r3, #36]
+  66:./la/la_sampling.cpp **** 	TIM1->CR1 = TIM_CR1_URS;
+ 1172              		.loc 1 66 0
+ 1173 04ba 1985     		strh	r1, [r3, #40]	@ movhi
+  67:./la/la_sampling.cpp **** 	TIM1->ARR = period;//actual period is +1 of this value
+ 1174              		.loc 1 67 0
+ 1175 04bc 1A80     		strh	r2, [r3]	@ movhi
+  68:./la/la_sampling.cpp **** 	TIM1->CR2 = 0;
+ 1176              		.loc 1 68 0
+ 1177 04be 6289     		ldrh	r2, [r4, #10]
+ 1178 04c0 DA62     		str	r2, [r3, #44]
+  70:./la/la_sampling.cpp **** 	TIM1->EGR = TIM_EGR_UG;
+ 1179              		.loc 1 70 0
+ 1180 04c2 4FF48072 		mov	r2, #256
+  69:./la/la_sampling.cpp **** 	TIM1->DIER = TIM_DIER_UDE;
+ 1181              		.loc 1 69 0
+ 1182 04c6 9980     		strh	r1, [r3, #4]	@ movhi
+  70:./la/la_sampling.cpp **** 	TIM1->EGR = TIM_EGR_UG;
+ 1183              		.loc 1 70 0
+ 1184 04c8 9A81     		strh	r2, [r3, #12]	@ movhi
+  71:./la/la_sampling.cpp **** }
+ 1185              		.loc 1 71 0
+ 1186 04ca 0122     		movs	r2, #1
+ 1187 04cc 9A82     		strh	r2, [r3, #20]	@ movhi
+  72:./la/la_sampling.cpp **** 
+ 1188              		.loc 1 72 0
+ 1189 04ce 10BD     		pop	{r4, pc}
+ 1190              	.LVL54:
+ 1191              	.L139:
+ 1192              		.align	2
+ 1193              	.L138:
+ 1194 04d0 00000140 		.word	1073807360
+ 1195              		.cfi_endproc
+ 1196              	.LFE131:
+ 1198              		.align	1
+ 1199              		.global	_ZN7Sampler19CalcDMATransferSizeEv
+ 1200              		.syntax unified
+ 1201              		.thumb
+ 1202              		.thumb_func
+ 1203              		.fpu fpv4-sp-d16
+ 1205              	_ZN7Sampler19CalcDMATransferSizeEv:
+ 1206              	.LFB132:
+  75:./la/la_sampling.cpp **** 	uint32_t dmaSize = 0;
+ 1207              		.loc 1 75 0
+ 1208              		.cfi_startproc
+ 1209              		@ args = 0, pretend = 0, frame = 0
+ 1210              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1211              		@ link register save eliminated.
+ 1212              	.LVL55:
+  78:./la/la_sampling.cpp **** 	{
+ 1213              		.loc 1 78 0
+ 1214 04d4 0389     		ldrh	r3, [r0, #8]
+ 1215 04d6 13F03C03 		ands	r3, r3, #60
+ 1216 04da 06D0     		beq	.L142
+ 1217 04dc 302B     		cmp	r3, #48
+ 1218 04de 09D1     		bne	.L145
+  81:./la/la_sampling.cpp **** 		dmaSize = DMA_SxCR_MSIZE_0 | DMA_SxCR_PSIZE_0;
+ 1219              		.loc 1 81 0
+ 1220 04e0 0223     		movs	r3, #2
+ 1221 04e2 C360     		str	r3, [r0, #12]
+ 1222              	.LVL56:
+  82:./la/la_sampling.cpp **** 		break;
+ 1223              		.loc 1 82 0
+ 1224 04e4 4FF42050 		mov	r0, #10240
+ 1225              	.LVL57:
+  83:./la/la_sampling.cpp **** 	case SUMP_FLAG1_GR_32BIT:
+ 1226              		.loc 1 83 0
+ 1227 04e8 7047     		bx	lr
+ 1228              	.LVL58:
+ 1229              	.L142:
+  85:./la/la_sampling.cpp **** 		dmaSize = DMA_SxCR_MSIZE_1 | DMA_SxCR_PSIZE_1;
+ 1230              		.loc 1 85 0
+ 1231 04ea 0423     		movs	r3, #4
+ 1232 04ec C360     		str	r3, [r0, #12]
+ 1233              	.LVL59:
+  86:./la/la_sampling.cpp **** 		break;
+ 1234              		.loc 1 86 0
+ 1235 04ee 4FF4A040 		mov	r0, #20480
+ 1236              	.LVL60:
+  87:./la/la_sampling.cpp **** 	case SUMP_FLAG1_GR_8BIT:
+ 1237              		.loc 1 87 0
+ 1238 04f2 7047     		bx	lr
+ 1239              	.LVL61:
+ 1240              	.L145:
+  91:./la/la_sampling.cpp **** 		break;
+ 1241              		.loc 1 91 0
+ 1242 04f4 0123     		movs	r3, #1
+ 1243 04f6 C360     		str	r3, [r0, #12]
+  90:./la/la_sampling.cpp **** 		transferSize = 1;
+ 1244              		.loc 1 90 0
+ 1245 04f8 0020     		movs	r0, #0
+ 1246              	.LVL62:
+  95:./la/la_sampling.cpp **** 
+ 1247              		.loc 1 95 0
+ 1248 04fa 7047     		bx	lr
+ 1249              		.cfi_endproc
+ 1250              	.LFE132:
+ 1252              		.align	1
+ 1253              		.global	_ZN7Sampler16SetupSamplingDMAEPvm
+ 1254              		.syntax unified
+ 1255              		.thumb
+ 1256              		.thumb_func
+ 1257              		.fpu fpv4-sp-d16
+ 1259              	_ZN7Sampler16SetupSamplingDMAEPvm:
+ 1260              	.LFB133:
+  98:./la/la_sampling.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1ENR_DMA2EN, ENABLE);
+ 1261              		.loc 1 98 0
+ 1262              		.cfi_startproc
+ 1263              		@ args = 0, pretend = 0, frame = 0
+ 1264              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1265              	.LVL63:
+ 1266 04fc 70B5     		push	{r4, r5, r6, lr}
+ 1267              	.LCFI16:
+ 1268              		.cfi_def_cfa_offset 16
+ 1269              		.cfi_offset 4, -16
+ 1270              		.cfi_offset 5, -12
+ 1271              		.cfi_offset 6, -8
+ 1272              		.cfi_offset 14, -4
+  98:./la/la_sampling.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1ENR_DMA2EN, ENABLE);
+ 1273              		.loc 1 98 0
+ 1274 04fe 0646     		mov	r6, r0
+ 1275 0500 0D46     		mov	r5, r1
+  99:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 1276              		.loc 1 99 0
+ 1277 0502 4FF48000 		mov	r0, #4194304
+ 1278              	.LVL64:
+ 1279 0506 0121     		movs	r1, #1
+ 1280              	.LVL65:
+  98:./la/la_sampling.cpp **** 	RCC_AHB1PeriphClockCmd(RCC_AHB1ENR_DMA2EN, ENABLE);
+ 1281              		.loc 1 98 0
+ 1282 0508 1446     		mov	r4, r2
+  99:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 1283              		.loc 1 99 0
+ 1284 050a FFF7FEFF 		bl	RCC_AHB1PeriphClockCmd
+ 1285              	.LVL66:
+ 100:./la/la_sampling.cpp **** 
+ 1286              		.loc 1 100 0
+ 1287 050e 3046     		mov	r0, r6
+ 1288 0510 FFF7FEFF 		bl	_ZN7Sampler19CalcDMATransferSizeEv
+ 1289              	.LVL67:
+ 107:./la/la_sampling.cpp **** 	//DMA2_Stream5->CR = D<>| dmaSize | DMA_SxCR_MINC | DMA_SxCR_CIRC;
+ 1290              		.loc 1 107 0
+ 1291 0514 064B     		ldr	r3, .L147
+ 113:./la/la_sampling.cpp **** #endif
+ 1292              		.loc 1 113 0
+ 1293 0516 074A     		ldr	r2, .L147+4
+ 107:./la/la_sampling.cpp **** 	//DMA2_Stream5->CR = D<>| dmaSize | DMA_SxCR_MINC | DMA_SxCR_CIRC;
+ 1294              		.loc 1 107 0
+ 1295 0518 40F04060 		orr	r0, r0, #201326592
+ 1296              	.LVL68:
+ 1297 051c 40F4A060 		orr	r0, r0, #1280
+ 1298 0520 1860     		str	r0, [r3]
+ 109:./la/la_sampling.cpp **** #ifdef SAMPLING_FSMC
+ 1299              		.loc 1 109 0
+ 1300 0522 DD60     		str	r5, [r3, #12]
+ 113:./la/la_sampling.cpp **** #endif
+ 1301              		.loc 1 113 0
+ 1302 0524 9A60     		str	r2, [r3, #8]
+ 116:./la/la_sampling.cpp **** 
+ 1303              		.loc 1 116 0
+ 1304 0526 0722     		movs	r2, #7
+ 115:./la/la_sampling.cpp **** 	DMA2_Stream5->FCR = DMA_SxFCR_DMDIS | DMA_SxFCR_FTH;
+ 1305              		.loc 1 115 0
+ 1306 0528 5C60     		str	r4, [r3, #4]
+ 116:./la/la_sampling.cpp **** 
+ 1307              		.loc 1 116 0
+ 1308 052a 5A61     		str	r2, [r3, #20]
+ 128:./la/la_sampling.cpp **** 
+ 1309              		.loc 1 128 0
+ 1310 052c 70BD     		pop	{r4, r5, r6, pc}
+ 1311              	.LVL69:
+ 1312              	.L148:
+ 1313 052e 00BF     		.align	2
+ 1314              	.L147:
+ 1315 0530 88640240 		.word	1073898632
+ 1316 0534 10080240 		.word	1073874960
+ 1317              		.cfi_endproc
+ 1318              	.LFE133:
+ 1320              		.align	1
+ 1321              		.global	_ZN7Sampler19SetupRLESamplingDMAEPvS0_m
+ 1322              		.syntax unified
+ 1323              		.thumb
+ 1324              		.thumb_func
+ 1325              		.fpu fpv4-sp-d16
+ 1327              	_ZN7Sampler19SetupRLESamplingDMAEPvS0_m:
+ 1328              	.LFB134:
+ 131:./la/la_sampling.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+ 1329              		.loc 1 131 0
+ 1330              		.cfi_startproc
+ 1331              		@ args = 0, pretend = 0, frame = 0
+ 1332              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1333              	.LVL70:
+ 1334 0538 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+ 1335              	.LCFI17:
+ 1336              		.cfi_def_cfa_offset 24
+ 1337              		.cfi_offset 4, -24
+ 1338              		.cfi_offset 5, -20
+ 1339              		.cfi_offset 6, -16
+ 1340              		.cfi_offset 7, -12
+ 1341              		.cfi_offset 8, -8
+ 1342              		.cfi_offset 14, -4
+ 131:./la/la_sampling.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+ 1343              		.loc 1 131 0
+ 1344 053c 0546     		mov	r5, r0
+ 1345 053e 8846     		mov	r8, r1
+ 133:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 1346              		.loc 1 133 0
+ 1347 0540 4FF48000 		mov	r0, #4194304
+ 1348              	.LVL71:
+ 1349 0544 0121     		movs	r1, #1
+ 1350              	.LVL72:
+ 131:./la/la_sampling.cpp **** 	GPIO_InitTypeDef GPIO_InitStructure;
+ 1351              		.loc 1 131 0
+ 1352 0546 1746     		mov	r7, r2
+ 1353 0548 1E46     		mov	r6, r3
+ 133:./la/la_sampling.cpp **** 	uint32_t dmaSize = CalcDMATransferSize();
+ 1354              		.loc 1 133 0
+ 1355 054a FFF7FEFF 		bl	RCC_AHB1PeriphClockCmd
+ 1356              	.LVL73:
+ 134:./la/la_sampling.cpp **** 
+ 1357              		.loc 1 134 0
+ 1358 054e 2846     		mov	r0, r5
+ 1359 0550 FFF7FEFF 		bl	_ZN7Sampler19CalcDMATransferSizeEv
+ 1360              	.LVL74:
+ 138:./la/la_sampling.cpp **** 	DMA2_Stream5->M0AR = (uint32_t)dataBufferA;
+ 1361              		.loc 1 138 0
+ 1362 0554 124C     		ldr	r4, .L155
+ 1363 0556 1349     		ldr	r1, .L155+4
+ 144:./la/la_sampling.cpp **** #endif
+ 1364              		.loc 1 144 0
+ 1365 0558 134B     		ldr	r3, .L155+8
+ 138:./la/la_sampling.cpp **** 	DMA2_Stream5->M0AR = (uint32_t)dataBufferA;
+ 1366              		.loc 1 138 0
+ 1367 055a 0443     		orrs	r4, r4, r0
+ 1368 055c 0C60     		str	r4, [r1]
+ 139:./la/la_sampling.cpp **** 	DMA2_Stream5->M1AR = (uint32_t)dataBufferB;
+ 1369              		.loc 1 139 0
+ 1370 055e C1F80C80 		str	r8, [r1, #12]
+ 140:./la/la_sampling.cpp **** #ifdef SAMPLING_FSMC
+ 1371              		.loc 1 140 0
+ 1372 0562 0F61     		str	r7, [r1, #16]
+ 144:./la/la_sampling.cpp **** #endif
+ 1373              		.loc 1 144 0
+ 1374 0564 8B60     		str	r3, [r1, #8]
+ 147:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 1375              		.loc 1 147 0
+ 1376 0566 0723     		movs	r3, #7
+ 146:./la/la_sampling.cpp **** 	DMA2_Stream5->FCR = DMA_SxFCR_DMDIS | DMA_SxFCR_FTH;
+ 1377              		.loc 1 146 0
+ 1378 0568 4E60     		str	r6, [r1, #4]
+ 147:./la/la_sampling.cpp **** 	DMA2->HIFCR = DMA_HIFCR_CTCIF5;
+ 1379              		.loc 1 147 0
+ 1380 056a 4B61     		str	r3, [r1, #20]
+ 148:./la/la_sampling.cpp **** 
+ 1381              		.loc 1 148 0
+ 1382 056c 0F4B     		ldr	r3, .L155+12
+ 1383 056e 104C     		ldr	r4, .L155+16
+ 1384 0570 4FF40062 		mov	r2, #2048
+ 1385 0574 DA60     		str	r2, [r3, #12]
+ 150:./la/la_sampling.cpp **** 	{
+ 1386              		.loc 1 150 0
+ 1387 0576 EB68     		ldr	r3, [r5, #12]
+ 1388 0578 012B     		cmp	r3, #1
+ 1389 057a 09D1     		bne	.L153
+ 1390              	.LVL75:
+ 1391              	.LBB51:
+ 1392              	.LBB52:
+ 153:./la/la_sampling.cpp **** 			SamplingRLEFrameInterrupt<uint8_t, RLE_8BIT_FLAG, RLE_8BIT_MAX_COUNT>);
+ 1393              		.loc 1 153 0
+ 1394 057c 0022     		movs	r2, #0
+ 1395 057e 0D4B     		ldr	r3, .L155+20
+ 1396 0580 1146     		mov	r1, r2
+ 1397 0582 4420     		movs	r0, #68
+ 1398              	.LVL76:
+ 1399 0584 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1400              	.LVL77:
+ 155:./la/la_sampling.cpp **** 
+ 1401              		.loc 1 155 0
+ 1402 0588 0B4B     		ldr	r3, .L155+24
+ 1403              	.LVL78:
+ 1404              	.L154:
+ 1405              	.LBE52:
+ 1406              	.LBE51:
+ 163:./la/la_sampling.cpp **** 
+ 1407              		.loc 1 163 0
+ 1408 058a 2362     		str	r3, [r4, #32]
+ 1409              	.LVL79:
+ 176:./la/la_sampling.cpp **** 
+ 1410              		.loc 1 176 0
+ 1411 058c BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 1412              	.LVL80:
+ 1413              	.L153:
+ 161:./la/la_sampling.cpp **** 				SamplingRLEFrameInterrupt<uint16_t, RLE_16BIT_FLAG, RLE_16BIT_MAX_COUNT>);
+ 1414              		.loc 1 161 0
+ 1415 0590 0022     		movs	r2, #0
+ 1416 0592 0A4B     		ldr	r3, .L155+28
+ 1417 0594 1146     		mov	r1, r2
+ 1418 0596 4420     		movs	r0, #68
+ 1419              	.LVL81:
+ 1420 0598 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1421              	.LVL82:
+ 163:./la/la_sampling.cpp **** 
+ 1422              		.loc 1 163 0
+ 1423 059c 084B     		ldr	r3, .L155+32
+ 1424 059e F4E7     		b	.L154
+ 1425              	.L156:
+ 1426              		.align	2
+ 1427              	.L155:
+ 1428 05a0 1004040C 		.word	201589776
+ 1429 05a4 88640240 		.word	1073898632
+ 1430 05a8 10080240 		.word	1073874960
+ 1431 05ac 00640240 		.word	1073898496
+ 1432 05b0 00000000 		.word	.LANCHOR0
+ 1433 05b4 00000000 		.word	_Z25SamplingRLEFrameInterruptIhLm128ELm127EEvv
+ 1434 05b8 00000000 		.word	_Z29SamplingRLETailFrameInterruptIhLm128ELm127EEvv
+ 1435 05bc 00000000 		.word	_Z25SamplingRLEFrameInterruptItLm32768ELm32767EEvv
+ 1436 05c0 00000000 		.word	_Z29SamplingRLETailFrameInterruptItLm32768ELm32767EEvv
+ 1437              		.cfi_endproc
+ 1438              	.LFE134:
+ 1440              		.align	1
+ 1441              		.global	_ZN7Sampler23SetupRegularEXTITriggerEPFvvE
+ 1442              		.syntax unified
+ 1443              		.thumb
+ 1444              		.thumb_func
+ 1445              		.fpu fpv4-sp-d16
+ 1447              	_ZN7Sampler23SetupRegularEXTITriggerEPFvvE:
+ 1448              	.LFB135:
+ 179:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_SYSCFGEN, ENABLE);
+ 1449              		.loc 1 179 0
+ 1450              		.cfi_startproc
+ 1451              		@ args = 0, pretend = 0, frame = 0
+ 1452              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1453              	.LVL83:
+ 1454 05c4 70B5     		push	{r4, r5, r6, lr}
+ 1455              	.LCFI18:
+ 1456              		.cfi_def_cfa_offset 16
+ 1457              		.cfi_offset 4, -16
+ 1458              		.cfi_offset 5, -12
+ 1459              		.cfi_offset 6, -8
+ 1460              		.cfi_offset 14, -4
+ 179:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_SYSCFGEN, ENABLE);
+ 1461              		.loc 1 179 0
+ 1462 05c6 0446     		mov	r4, r0
+ 1463 05c8 0D46     		mov	r5, r1
+ 180:./la/la_sampling.cpp **** 
+ 1464              		.loc 1 180 0
+ 1465 05ca 4FF48040 		mov	r0, #16384
+ 1466              	.LVL84:
+ 1467 05ce 0121     		movs	r1, #1
+ 1468              	.LVL85:
+ 1469 05d0 FFF7FEFF 		bl	RCC_APB2PeriphClockCmd
+ 1470              	.LVL86:
+ 183:./la/la_sampling.cpp **** 	uint32_t falling = triggerMask & ~triggerValue;
+ 1471              		.loc 1 183 0
+ 1472 05d4 D4E90031 		ldrd	r3, r1, [r4]
+ 1473 05d8 03EA0100 		and	r0, r3, r1
+ 1474              	.LVL87:
+ 184:./la/la_sampling.cpp **** 	//route exti to triggerMask GPIO port
+ 1475              		.loc 1 184 0
+ 1476 05dc 23EA0101 		bic	r1, r3, r1
+ 1477              	.LVL88:
+ 199:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[1] = extiCR;
+ 1478              		.loc 1 199 0
+ 1479 05e0 474B     		ldr	r3, .L172
+ 1480 05e2 42F22222 		movw	r2, #8738
+ 1481 05e6 9A60     		str	r2, [r3, #8]
+ 205:./la/la_sampling.cpp **** 	EXTI->RTSR = rising;
+ 1482              		.loc 1 205 0
+ 1483 05e8 4FF0FF36 		mov	r6, #-1
+ 200:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[2] = extiCR;
+ 1484              		.loc 1 200 0
+ 1485 05ec DA60     		str	r2, [r3, #12]
+ 201:./la/la_sampling.cpp **** 	SYSCFG->EXTICR[3] = extiCR;
+ 1486              		.loc 1 201 0
+ 1487 05ee 1A61     		str	r2, [r3, #16]
+ 202:./la/la_sampling.cpp **** 
+ 1488              		.loc 1 202 0
+ 1489 05f0 5A61     		str	r2, [r3, #20]
+ 204:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;
+ 1490              		.loc 1 204 0
+ 1491 05f2 0022     		movs	r2, #0
+ 1492 05f4 C3F80024 		str	r2, [r3, #1024]
+ 205:./la/la_sampling.cpp **** 	EXTI->RTSR = rising;
+ 1493              		.loc 1 205 0
+ 1494 05f8 C3F81464 		str	r6, [r3, #1044]
+ 206:./la/la_sampling.cpp **** 	EXTI->FTSR = falling;
+ 1495              		.loc 1 206 0
+ 1496 05fc C3F80804 		str	r0, [r3, #1032]
+ 207:./la/la_sampling.cpp **** 
+ 1497              		.loc 1 207 0
+ 1498 0600 C3F80C14 		str	r1, [r3, #1036]
+ 1499              	.LBB53:
+ 1500              	.LBB54:
+ 1501              		.loc 2 326 0
+ 1502              		.syntax unified
+ 1503              	@ 326 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h" 1
+ 1504 0604 BFF34F8F 		dsb
+ 1505              	@ 0 "" 2
+ 1506              		.thumb
+ 1507              		.syntax unified
+ 1508              	.LBE54:
+ 1509              	.LBE53:
+ 211:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI0_IRQn);
+ 1510              		.loc 1 211 0
+ 1511 0608 2368     		ldr	r3, [r4]
+ 1512 060a DE07     		lsls	r6, r3, #31
+ 1513 060c 50D5     		bpl	.L158
+ 211:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI0_IRQn);
+ 1514              		.loc 1 211 0 is_stmt 0 discriminator 1
+ 1515 060e 2B46     		mov	r3, r5
+ 1516 0610 1146     		mov	r1, r2
+ 1517              	.LVL89:
+ 1518 0612 0620     		movs	r0, #6
+ 1519              	.LVL90:
+ 1520 0614 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1521              	.LVL91:
+ 1522              	.L159:
+ 213:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI1_IRQn);
+ 1523              		.loc 1 213 0 is_stmt 1
+ 1524 0618 2368     		ldr	r3, [r4]
+ 1525 061a 9807     		lsls	r0, r3, #30
+ 1526 061c 4DD5     		bpl	.L160
+ 213:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI1_IRQn);
+ 1527              		.loc 1 213 0 is_stmt 0 discriminator 1
+ 1528 061e 0022     		movs	r2, #0
+ 1529 0620 2B46     		mov	r3, r5
+ 1530 0622 1146     		mov	r1, r2
+ 1531 0624 0720     		movs	r0, #7
+ 1532 0626 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1533              	.LVL92:
+ 1534              	.L161:
+ 215:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI2_IRQn);
+ 1535              		.loc 1 215 0 is_stmt 1
+ 1536 062a 2368     		ldr	r3, [r4]
+ 1537 062c 5907     		lsls	r1, r3, #29
+ 1538 062e 49D5     		bpl	.L162
+ 215:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI2_IRQn);
+ 1539              		.loc 1 215 0 is_stmt 0 discriminator 1
+ 1540 0630 0022     		movs	r2, #0
+ 1541 0632 2B46     		mov	r3, r5
+ 1542 0634 1146     		mov	r1, r2
+ 1543 0636 0820     		movs	r0, #8
+ 1544 0638 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1545              	.LVL93:
+ 1546              	.L163:
+ 217:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI3_IRQn);
+ 1547              		.loc 1 217 0 is_stmt 1
+ 1548 063c 2368     		ldr	r3, [r4]
+ 1549 063e 1A07     		lsls	r2, r3, #28
+ 1550 0640 46D5     		bpl	.L164
+ 217:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI3_IRQn);
+ 1551              		.loc 1 217 0 is_stmt 0 discriminator 1
+ 1552 0642 0022     		movs	r2, #0
+ 1553 0644 2B46     		mov	r3, r5
+ 1554 0646 1146     		mov	r1, r2
+ 1555 0648 0920     		movs	r0, #9
+ 1556 064a FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1557              	.LVL94:
+ 1558              	.L165:
+ 219:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI4_IRQn);
+ 1559              		.loc 1 219 0 is_stmt 1
+ 1560 064e 2368     		ldr	r3, [r4]
+ 1561 0650 DB06     		lsls	r3, r3, #27
+ 1562 0652 43D5     		bpl	.L166
+ 219:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI4_IRQn);
+ 1563              		.loc 1 219 0 is_stmt 0 discriminator 1
+ 1564 0654 0022     		movs	r2, #0
+ 1565 0656 2B46     		mov	r3, r5
+ 1566 0658 1146     		mov	r1, r2
+ 1567 065a 0A20     		movs	r0, #10
+ 1568 065c FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1569              	.LVL95:
+ 1570              	.L167:
+ 221:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI9_5_IRQn);
+ 1571              		.loc 1 221 0 is_stmt 1
+ 1572 0660 2368     		ldr	r3, [r4]
+ 1573 0662 13F4787F 		tst	r3, #992
+ 1574 0666 3FD0     		beq	.L168
+ 221:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI9_5_IRQn);
+ 1575              		.loc 1 221 0 is_stmt 0 discriminator 1
+ 1576 0668 0022     		movs	r2, #0
+ 1577 066a 2B46     		mov	r3, r5
+ 1578 066c 1146     		mov	r1, r2
+ 1579 066e 1720     		movs	r0, #23
+ 1580 0670 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1581              	.LVL96:
+ 1582              	.L169:
+ 223:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI15_10_IRQn);
+ 1583              		.loc 1 223 0 is_stmt 1
+ 1584 0674 2368     		ldr	r3, [r4]
+ 1585 0676 13F47C4F 		tst	r3, #64512
+ 1586 067a 3BD0     		beq	.L170
+ 223:./la/la_sampling.cpp **** 	else InterruptController::DisableChannel(EXTI15_10_IRQn);
+ 1587              		.loc 1 223 0 is_stmt 0 discriminator 1
+ 1588 067c 0022     		movs	r2, #0
+ 1589 067e 2B46     		mov	r3, r5
+ 1590 0680 1146     		mov	r1, r2
+ 1591 0682 2820     		movs	r0, #40
+ 1592 0684 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1593              	.LVL97:
+ 1594              	.L171:
+ 227:./la/la_sampling.cpp **** 	TIM8->SMCR |= TIM_SMCR_SMS_1 | TIM_SMCR_SMS_2;
+ 1595              		.loc 1 227 0 is_stmt 1
+ 1596 0688 1E4B     		ldr	r3, .L172+4
+ 1597 068a 7022     		movs	r2, #112
+ 1598 068c 1A81     		strh	r2, [r3, #8]	@ movhi
+ 228:./la/la_sampling.cpp **** 	TIM8->DIER |= TIM_DIER_TIE;
+ 1599              		.loc 1 228 0
+ 1600 068e 1A89     		ldrh	r2, [r3, #8]
+ 1601 0690 42F00602 		orr	r2, r2, #6
+ 1602 0694 1A81     		strh	r2, [r3, #8]	@ movhi
+ 229:./la/la_sampling.cpp **** 	InterruptController::EnableChannel(TIM8_TRG_COM_TIM14_IRQn, 2, 0, SamplingManualStart);
+ 1603              		.loc 1 229 0
+ 1604 0696 9A89     		ldrh	r2, [r3, #12]
+ 1605 0698 42F04002 		orr	r2, r2, #64
+ 1606 069c 9A81     		strh	r2, [r3, #12]	@ movhi
+ 230:./la/la_sampling.cpp **** 	samplingManualToExternalTransit = interruptHandler;
+ 1607              		.loc 1 230 0
+ 1608 069e 0221     		movs	r1, #2
+ 1609 06a0 194B     		ldr	r3, .L172+8
+ 1610 06a2 0022     		movs	r2, #0
+ 1611 06a4 2D20     		movs	r0, #45
+ 1612 06a6 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1613              	.LVL98:
+ 231:./la/la_sampling.cpp **** #endif
+ 1614              		.loc 1 231 0
+ 1615 06aa 184B     		ldr	r3, .L172+12
+ 1616 06ac 5D60     		str	r5, [r3, #4]
+ 233:./la/la_sampling.cpp **** 
+ 1617              		.loc 1 233 0
+ 1618 06ae 70BD     		pop	{r4, r5, r6, pc}
+ 1619              	.LVL99:
+ 1620              	.L158:
+ 1621              	.LBB55:
+ 1622              	.LBB56:
+  47:./nvic.h      **** 	      (uint32_t)0x01 << (irqChannel & (uint8_t)0x1F);
+ 1623              		.loc 3 47 0
+ 1624 06b0 174B     		ldr	r3, .L172+16
+ 1625 06b2 4022     		movs	r2, #64
+ 1626 06b4 C3F88020 		str	r2, [r3, #128]
+ 1627 06b8 AEE7     		b	.L159
+ 1628              	.LVL100:
+ 1629              	.L160:
+ 1630              	.LBE56:
+ 1631              	.LBE55:
+ 1632              	.LBB57:
+ 1633              	.LBB58:
+ 1634 06ba 154B     		ldr	r3, .L172+16
+ 1635 06bc 8022     		movs	r2, #128
+ 1636 06be C3F88020 		str	r2, [r3, #128]
+ 1637 06c2 B2E7     		b	.L161
+ 1638              	.LVL101:
+ 1639              	.L162:
+ 1640              	.LBE58:
+ 1641              	.LBE57:
+ 1642              	.LBB59:
+ 1643              	.LBB60:
+ 1644 06c4 124B     		ldr	r3, .L172+16
+ 1645 06c6 4FF48072 		mov	r2, #256
+ 1646 06ca C3F88020 		str	r2, [r3, #128]
+ 1647 06ce B5E7     		b	.L163
+ 1648              	.LVL102:
+ 1649              	.L164:
+ 1650              	.LBE60:
+ 1651              	.LBE59:
+ 1652              	.LBB61:
+ 1653              	.LBB62:
+ 1654 06d0 0F4B     		ldr	r3, .L172+16
+ 1655 06d2 4FF40072 		mov	r2, #512
+ 1656 06d6 C3F88020 		str	r2, [r3, #128]
+ 1657 06da B8E7     		b	.L165
+ 1658              	.LVL103:
+ 1659              	.L166:
+ 1660              	.LBE62:
+ 1661              	.LBE61:
+ 1662              	.LBB63:
+ 1663              	.LBB64:
+ 1664 06dc 0C4B     		ldr	r3, .L172+16
+ 1665 06de 4FF48062 		mov	r2, #1024
+ 1666 06e2 C3F88020 		str	r2, [r3, #128]
+ 1667 06e6 BBE7     		b	.L167
+ 1668              	.LVL104:
+ 1669              	.L168:
+ 1670              	.LBE64:
+ 1671              	.LBE63:
+ 1672              	.LBB65:
+ 1673              	.LBB66:
+ 1674 06e8 094B     		ldr	r3, .L172+16
+ 1675 06ea 4FF40002 		mov	r2, #8388608
+ 1676 06ee C3F88020 		str	r2, [r3, #128]
+ 1677 06f2 BFE7     		b	.L169
+ 1678              	.LVL105:
+ 1679              	.L170:
+ 1680              	.LBE66:
+ 1681              	.LBE65:
+ 1682              	.LBB67:
+ 1683              	.LBB68:
+ 1684 06f4 064B     		ldr	r3, .L172+16
+ 1685 06f6 4FF48072 		mov	r2, #256
+ 1686 06fa C3F88420 		str	r2, [r3, #132]
+ 1687 06fe C3E7     		b	.L171
+ 1688              	.L173:
+ 1689              		.align	2
+ 1690              	.L172:
+ 1691 0700 00380140 		.word	1073821696
+ 1692 0704 00040140 		.word	1073808384
+ 1693 0708 00000000 		.word	_ZL19SamplingManualStartv
+ 1694 070c 00000000 		.word	.LANCHOR0
+ 1695 0710 00E100E0 		.word	-536813312
+ 1696              	.LBE68:
+ 1697              	.LBE67:
+ 1698              		.cfi_endproc
+ 1699              	.LFE135:
+ 1701              		.align	1
+ 1702              		.global	_ZN7Sampler15SetupDelayTimerEv
+ 1703              		.syntax unified
+ 1704              		.thumb
+ 1705              		.thumb_func
+ 1706              		.fpu fpv4-sp-d16
+ 1708              	_ZN7Sampler15SetupDelayTimerEv:
+ 1709              	.LFB136:
+ 236:./la/la_sampling.cpp **** 	RCC_APB2PeriphClockCmd(RCC_APB2ENR_TIM8EN, ENABLE);
+ 1710              		.loc 1 236 0
+ 1711              		.cfi_startproc
+ 1712              		@ args = 0, pretend = 0, frame = 0
+ 1713              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1714              	.LVL106:
+ 1715 0714 08B5     		push	{r3, lr}
+ 1716              	.LCFI19:
+ 1717              		.cfi_def_cfa_offset 8
+ 1718              		.cfi_offset 3, -8
+ 1719              		.cfi_offset 14, -4
+ 237:./la/la_sampling.cpp **** 	//After-trigger delay timer
+ 1720              		.loc 1 237 0
+ 1721 0716 0121     		movs	r1, #1
+ 1722 0718 0220     		movs	r0, #2
+ 1723              	.LVL107:
+ 1724 071a FFF7FEFF 		bl	RCC_APB2PeriphClockCmd
+ 1725              	.LVL108:
+ 239:./la/la_sampling.cpp **** 	TIM8->CNT = 0;
+ 1726              		.loc 1 239 0
+ 1727 071e 0E4B     		ldr	r3, .L175
+ 241:./la/la_sampling.cpp **** 	TIM8->PSC = TIM1->ARR;
+ 1728              		.loc 1 241 0
+ 1729 0720 0E49     		ldr	r1, .L175+4
+ 239:./la/la_sampling.cpp **** 	TIM8->CNT = 0;
+ 1730              		.loc 1 239 0
+ 1731 0722 0422     		movs	r2, #4
+ 1732 0724 1A80     		strh	r2, [r3]	@ movhi
+ 240:./la/la_sampling.cpp **** 	TIM8->ARR = delayCount;//  / transferSize;
+ 1733              		.loc 1 240 0
+ 1734 0726 0022     		movs	r2, #0
+ 1735 0728 5A62     		str	r2, [r3, #36]
+ 241:./la/la_sampling.cpp **** 	TIM8->PSC = TIM1->ARR;
+ 1736              		.loc 1 241 0
+ 1737 072a C969     		ldr	r1, [r1, #28]
+ 1738 072c D962     		str	r1, [r3, #44]
+ 242:./la/la_sampling.cpp **** 	TIM8->CR2 = 0;
+ 1739              		.loc 1 242 0
+ 1740 072e 0C49     		ldr	r1, .L175+8
+ 1741 0730 C96A     		ldr	r1, [r1, #44]
+ 244:./la/la_sampling.cpp **** 	TIM8->SR &= ~TIM_SR_UIF;
+ 1742              		.loc 1 244 0
+ 1743 0732 0120     		movs	r0, #1
+ 242:./la/la_sampling.cpp **** 	TIM8->CR2 = 0;
+ 1744              		.loc 1 242 0
+ 1745 0734 89B2     		uxth	r1, r1
+ 1746 0736 1985     		strh	r1, [r3, #40]	@ movhi
+ 243:./la/la_sampling.cpp **** 	TIM8->EGR = TIM_EGR_UG;
+ 1747              		.loc 1 243 0
+ 1748 0738 9A80     		strh	r2, [r3, #4]	@ movhi
+ 244:./la/la_sampling.cpp **** 	TIM8->SR &= ~TIM_SR_UIF;
+ 1749              		.loc 1 244 0
+ 1750 073a 9882     		strh	r0, [r3, #20]	@ movhi
+ 245:./la/la_sampling.cpp **** 	TIM8->DIER = TIM_DIER_UIE;
+ 1751              		.loc 1 245 0
+ 1752 073c 198A     		ldrh	r1, [r3, #16]
+ 1753 073e 21F00101 		bic	r1, r1, #1
+ 1754 0742 0904     		lsls	r1, r1, #16
+ 1755 0744 090C     		lsrs	r1, r1, #16
+ 1756 0746 1982     		strh	r1, [r3, #16]	@ movhi
+ 246:./la/la_sampling.cpp **** 
+ 1757              		.loc 1 246 0
+ 1758 0748 9881     		strh	r0, [r3, #12]	@ movhi
+ 248:./la/la_sampling.cpp **** }
+ 1759              		.loc 1 248 0
+ 1760 074a 0221     		movs	r1, #2
+ 1761 074c 054B     		ldr	r3, .L175+12
+ 1762 074e 2C20     		movs	r0, #44
+ 1763 0750 FFF7FEFF 		bl	_ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+ 1764              	.LVL109:
+ 249:./la/la_sampling.cpp **** 
+ 1765              		.loc 1 249 0
+ 1766 0754 08BD     		pop	{r3, pc}
+ 1767              	.L176:
+ 1768 0756 00BF     		.align	2
+ 1769              	.L175:
+ 1770 0758 00040140 		.word	1073808384
+ 1771 075c 00000000 		.word	.LANCHOR0
+ 1772 0760 00000140 		.word	1073807360
+ 1773 0764 00000000 		.word	_ZL21SamplingFrameCompeltev
+ 1774              		.cfi_endproc
+ 1775              	.LFE136:
+ 1777              		.align	1
+ 1778              		.global	_ZN7Sampler12SetupRegularEv
+ 1779              		.syntax unified
+ 1780              		.thumb
+ 1781              		.thumb_func
+ 1782              		.fpu fpv4-sp-d16
+ 1784              	_ZN7Sampler12SetupRegularEv:
+ 1785              	.LFB137:
+ 252:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 1786              		.loc 1 252 0
+ 1787              		.cfi_startproc
+ 1788              		@ args = 0, pretend = 0, frame = 0
+ 1789              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1790              	.LVL110:
+ 1791 0768 10B5     		push	{r4, lr}
+ 1792              	.LCFI20:
+ 1793              		.cfi_def_cfa_offset 8
+ 1794              		.cfi_offset 4, -8
+ 1795              		.cfi_offset 14, -4
+ 252:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 1796              		.loc 1 252 0
+ 1797 076a 0446     		mov	r4, r0
+ 259:./la/la_sampling.cpp **** 	SetupSamplingDMA(samplingRam, transferCount);
+ 1798              		.loc 1 259 0
+ 1799 076c FFF7FEFF 		bl	_ZN7Sampler18SetupSamplingTimerEv
+ 1800              	.LVL111:
+ 260:./la/la_sampling.cpp **** 	SetupDelayTimer();
+ 1801              		.loc 1 260 0
+ 1802 0770 074B     		ldr	r3, .L178
+ 1803 0772 0849     		ldr	r1, .L178+4
+ 1804 0774 DA68     		ldr	r2, [r3, #12]
+ 1805 0776 2046     		mov	r0, r4
+ 1806 0778 FFF7FEFF 		bl	_ZN7Sampler16SetupSamplingDMAEPvm
+ 1807              	.LVL112:
+ 261:./la/la_sampling.cpp **** 	SetupRegularEXTITrigger(SamplingExternalEventInterrupt);
+ 1808              		.loc 1 261 0
+ 1809 077c 2046     		mov	r0, r4
+ 1810 077e FFF7FEFF 		bl	_ZN7Sampler15SetupDelayTimerEv
+ 1811              	.LVL113:
+ 262:./la/la_sampling.cpp **** }
+ 1812              		.loc 1 262 0
+ 1813 0782 2046     		mov	r0, r4
+ 1814 0784 0449     		ldr	r1, .L178+8
+ 263:./la/la_sampling.cpp **** 
+ 1815              		.loc 1 263 0
+ 1816 0786 BDE81040 		pop	{r4, lr}
+ 1817              	.LCFI21:
+ 1818              		.cfi_restore 14
+ 1819              		.cfi_restore 4
+ 1820              		.cfi_def_cfa_offset 0
+ 1821              	.LVL114:
+ 262:./la/la_sampling.cpp **** }
+ 1822              		.loc 1 262 0
+ 1823 078a FFF7FEBF 		b	_ZN7Sampler23SetupRegularEXTITriggerEPFvvE
+ 1824              	.LVL115:
+ 1825              	.L179:
+ 1826 078e 00BF     		.align	2
+ 1827              	.L178:
+ 1828 0790 00000000 		.word	.LANCHOR0
+ 1829 0794 00000000 		.word	samplingRam
+ 1830 0798 00000000 		.word	_ZL30SamplingExternalEventInterruptv
+ 1831              		.cfi_endproc
+ 1832              	.LFE137:
+ 1834              		.align	1
+ 1835              		.global	_ZN7Sampler8SetupRLEEv
+ 1836              		.syntax unified
+ 1837              		.thumb
+ 1838              		.thumb_func
+ 1839              		.fpu fpv4-sp-d16
+ 1841              	_ZN7Sampler8SetupRLEEv:
+ 1842              	.LFB138:
+ 266:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 1843              		.loc 1 266 0
+ 1844              		.cfi_startproc
+ 1845              		@ args = 0, pretend = 0, frame = 0
+ 1846              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1847              	.LVL116:
+ 1848              	.LBB69:
+ 276:./la/la_sampling.cpp **** 	}
+ 1849              		.loc 1 276 0
+ 1850 079c 134A     		ldr	r2, .L183
+ 1851              	.LBE69:
+ 266:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 1852              		.loc 1 266 0
+ 1853 079e 38B5     		push	{r3, r4, r5, lr}
+ 1854              	.LCFI22:
+ 1855              		.cfi_def_cfa_offset 16
+ 1856              		.cfi_offset 3, -16
+ 1857              		.cfi_offset 4, -12
+ 1858              		.cfi_offset 5, -8
+ 1859              		.cfi_offset 14, -4
+ 1860              	.LBB70:
+ 274:./la/la_sampling.cpp **** 	{
+ 1861              		.loc 1 274 0
+ 1862 07a0 0024     		movs	r4, #0
+ 1863              	.LBE70:
+ 266:./la/la_sampling.cpp **** 	//Sampling scheme:
+ 1864              		.loc 1 266 0
+ 1865 07a2 0546     		mov	r5, r0
+ 1866              	.LBB71:
+ 276:./la/la_sampling.cpp **** 	}
+ 1867              		.loc 1 276 0
+ 1868 07a4 2346     		mov	r3, r4
+ 1869 07a6 02F50071 		add	r1, r2, #512
+ 1870              	.LVL117:
+ 1871              	.L181:
+ 276:./la/la_sampling.cpp **** 	}
+ 1872              		.loc 1 276 0 is_stmt 0 discriminator 2
+ 1873 07aa 42F82430 		str	r3, [r2, r4, lsl #2]
+ 1874 07ae 41F82430 		str	r3, [r1, r4, lsl #2]
+ 274:./la/la_sampling.cpp **** 	{
+ 1875              		.loc 1 274 0 is_stmt 1 discriminator 2
+ 1876 07b2 0134     		adds	r4, r4, #1
+ 1877              	.LVL118:
+ 1878 07b4 802C     		cmp	r4, #128
+ 1879 07b6 F8D1     		bne	.L181
+ 1880              	.LBE71:
+ 278:./la/la_sampling.cpp **** 	rleValue = 0;
+ 1881              		.loc 1 278 0
+ 1882 07b8 0D4A     		ldr	r2, .L183+4
+ 281:./la/la_sampling.cpp **** 	samplingRam[0] = rleValue;
+ 1883              		.loc 1 281 0
+ 1884 07ba D169     		ldr	r1, [r2, #28]
+ 278:./la/la_sampling.cpp **** 	rleValue = 0;
+ 1885              		.loc 1 278 0
+ 1886 07bc 5361     		str	r3, [r2, #20]
+ 279:./la/la_sampling.cpp **** 	rleRepeatCount = 0;
+ 1887              		.loc 1 279 0
+ 1888 07be 9360     		str	r3, [r2, #8]
+ 280:./la/la_sampling.cpp **** 	rleDelayCount = delayCount;
+ 1889              		.loc 1 280 0
+ 1890 07c0 1361     		str	r3, [r2, #16]
+ 281:./la/la_sampling.cpp **** 	samplingRam[0] = rleValue;
+ 1891              		.loc 1 281 0
+ 1892 07c2 9161     		str	r1, [r2, #24]
+ 282:./la/la_sampling.cpp **** 	rleTailSampling = false;
+ 1893              		.loc 1 282 0
+ 1894 07c4 0B4A     		ldr	r2, .L183+8
+ 285:./la/la_sampling.cpp **** 	SetupRLESamplingDMA(rleTempSamplingRamA, rleTempSamplingRamB, MAX_RLE_SAMPLE_COUNT);
+ 1895              		.loc 1 285 0
+ 1896 07c6 2846     		mov	r0, r5
+ 1897              	.LVL119:
+ 282:./la/la_sampling.cpp **** 	rleTailSampling = false;
+ 1898              		.loc 1 282 0
+ 1899 07c8 1360     		str	r3, [r2]
+ 285:./la/la_sampling.cpp **** 	SetupRLESamplingDMA(rleTempSamplingRamA, rleTempSamplingRamB, MAX_RLE_SAMPLE_COUNT);
+ 1900              		.loc 1 285 0
+ 1901 07ca FFF7FEFF 		bl	_ZN7Sampler18SetupSamplingTimerEv
+ 1902              	.LVL120:
+ 286:./la/la_sampling.cpp **** 	SetupRegularEXTITrigger(SamplingRLEExternalEventInterrupt);
+ 1903              		.loc 1 286 0
+ 1904 07ce 074A     		ldr	r2, .L183
+ 1905 07d0 2346     		mov	r3, r4
+ 1906 07d2 02F50071 		add	r1, r2, #512
+ 1907 07d6 2846     		mov	r0, r5
+ 1908 07d8 FFF7FEFF 		bl	_ZN7Sampler19SetupRLESamplingDMAEPvS0_m
+ 1909              	.LVL121:
+ 287:./la/la_sampling.cpp **** 
+ 1910              		.loc 1 287 0
+ 1911 07dc 0649     		ldr	r1, .L183+12
+ 1912 07de 2846     		mov	r0, r5
+ 1913 07e0 FFF7FEFF 		bl	_ZN7Sampler23SetupRegularEXTITriggerEPFvvE
+ 1914              	.LVL122:
+ 289:./la/la_sampling.cpp **** }
+ 1915              		.loc 1 289 0
+ 1916 07e4 054B     		ldr	r3, .L183+16
+ 1917 07e6 2022     		movs	r2, #32
+ 1918 07e8 DA60     		str	r2, [r3, #12]
+ 290:./la/la_sampling.cpp **** 
+ 1919              		.loc 1 290 0
+ 1920 07ea 38BD     		pop	{r3, r4, r5, pc}
+ 1921              	.LVL123:
+ 1922              	.L184:
+ 1923              		.align	2
+ 1924              	.L183:
+ 1925 07ec 00000000 		.word	.LANCHOR1
+ 1926 07f0 00000000 		.word	.LANCHOR0
+ 1927 07f4 00000000 		.word	samplingRam
+ 1928 07f8 00000000 		.word	_ZL33SamplingRLEExternalEventInterruptv
+ 1929 07fc 000C0240 		.word	1073875968
+ 1930              		.cfi_endproc
+ 1931              	.LFE138:
+ 1933              		.align	1
+ 1934              		.global	_ZN7Sampler5StartEv
+ 1935              		.syntax unified
+ 1936              		.thumb
+ 1937              		.thumb_func
+ 1938              		.fpu fpv4-sp-d16
+ 1940              	_ZN7Sampler5StartEv:
+ 1941              	.LFB139:
+ 293:./la/la_sampling.cpp **** 	if(flags & SUMP_FLAG1_ENABLE_RLE)
+ 1942              		.loc 1 293 0
+ 1943              		.cfi_startproc
+ 1944              		@ args = 0, pretend = 0, frame = 0
+ 1945              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1946              	.LVL124:
+ 1947 0800 08B5     		push	{r3, lr}
+ 1948              	.LCFI23:
+ 1949              		.cfi_def_cfa_offset 8
+ 1950              		.cfi_offset 3, -8
+ 1951              		.cfi_offset 14, -4
+ 294:./la/la_sampling.cpp **** 	{
+ 1952              		.loc 1 294 0
+ 1953 0802 0389     		ldrh	r3, [r0, #8]
+ 1954 0804 DB05     		lsls	r3, r3, #23
+ 1955 0806 10D5     		bpl	.L186
+ 296:./la/la_sampling.cpp **** 	}
+ 1956              		.loc 1 296 0
+ 1957 0808 FFF7FEFF 		bl	_ZN7Sampler8SetupRLEEv
+ 1958              	.LVL125:
+ 1959              	.L187:
+ 302:./la/la_sampling.cpp **** 	DMA2_Stream5->CR |= DMA_SxCR_EN;
+ 1960              		.loc 1 302 0
+ 1961 080c 084B     		ldr	r3, .L188
+ 1962 080e 4FF40062 		mov	r2, #2048
+ 1963 0812 DA60     		str	r2, [r3, #12]
+ 303:./la/la_sampling.cpp **** 	TIM1->CR1 |= TIM_CR1_CEN;//enable timer
+ 1964              		.loc 1 303 0
+ 1965 0814 074A     		ldr	r2, .L188+4
+ 1966 0816 1368     		ldr	r3, [r2]
+ 1967 0818 43F00103 		orr	r3, r3, #1
+ 1968 081c 1360     		str	r3, [r2]
+ 304:./la/la_sampling.cpp **** }
+ 1969              		.loc 1 304 0
+ 1970 081e 064A     		ldr	r2, .L188+8
+ 1971 0820 1388     		ldrh	r3, [r2]
+ 1972 0822 43F00103 		orr	r3, r3, #1
+ 1973 0826 1380     		strh	r3, [r2]	@ movhi
+ 305:./la/la_sampling.cpp **** 
+ 1974              		.loc 1 305 0
+ 1975 0828 08BD     		pop	{r3, pc}
+ 1976              	.LVL126:
+ 1977              	.L186:
+ 300:./la/la_sampling.cpp **** 	}
+ 1978              		.loc 1 300 0
+ 1979 082a FFF7FEFF 		bl	_ZN7Sampler12SetupRegularEv
+ 1980              	.LVL127:
+ 1981 082e EDE7     		b	.L187
+ 1982              	.L189:
+ 1983              		.align	2
+ 1984              	.L188:
+ 1985 0830 00640240 		.word	1073898496
+ 1986 0834 88640240 		.word	1073898632
+ 1987 0838 00000140 		.word	1073807360
+ 1988              		.cfi_endproc
+ 1989              	.LFE139:
+ 1991              		.align	1
+ 1992              		.global	_ZN7Sampler4StopEv
+ 1993              		.syntax unified
+ 1994              		.thumb
+ 1995              		.thumb_func
+ 1996              		.fpu fpv4-sp-d16
+ 1998              	_ZN7Sampler4StopEv:
+ 1999              	.LFB140:
+ 308:./la/la_sampling.cpp **** 	DMA2_Stream5->CR &= ~(DMA_SxCR_TCIE | DMA_SxCR_EN);//stop dma
+ 2000              		.loc 1 308 0
+ 2001              		.cfi_startproc
+ 2002              		@ args = 0, pretend = 0, frame = 0
+ 2003              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2004              		@ link register save eliminated.
+ 2005              	.LVL128:
+ 309:./la/la_sampling.cpp **** 	TIM1->CR1 &= ~TIM_CR1_CEN;//stop sampling timer
+ 2006              		.loc 1 309 0
+ 2007 083c 064A     		ldr	r2, .L191
+ 2008 083e 1368     		ldr	r3, [r2]
+ 2009 0840 23F01103 		bic	r3, r3, #17
+ 2010 0844 1360     		str	r3, [r2]
+ 310:./la/la_sampling.cpp **** }
+ 2011              		.loc 1 310 0
+ 2012 0846 054A     		ldr	r2, .L191+4
+ 2013 0848 1388     		ldrh	r3, [r2]
+ 2014 084a 23F00103 		bic	r3, r3, #1
+ 2015 084e 1B04     		lsls	r3, r3, #16
+ 2016 0850 1B0C     		lsrs	r3, r3, #16
+ 2017 0852 1380     		strh	r3, [r2]	@ movhi
+ 311:./la/la_sampling.cpp **** 
+ 2018              		.loc 1 311 0
+ 2019 0854 7047     		bx	lr
+ 2020              	.L192:
+ 2021 0856 00BF     		.align	2
+ 2022              	.L191:
+ 2023 0858 88640240 		.word	1073898632
+ 2024 085c 00000140 		.word	1073807360
+ 2025              		.cfi_endproc
+ 2026              	.LFE140:
+ 2028              		.align	1
+ 2029              		.global	_ZN7Sampler3ArmEPFvvE
+ 2030              		.syntax unified
+ 2031              		.thumb
+ 2032              		.thumb_func
+ 2033              		.fpu fpv4-sp-d16
+ 2035              	_ZN7Sampler3ArmEPFvvE:
+ 2036              	.LFB141:
+ 314:./la/la_sampling.cpp **** 	EXTI->PR = 0xffffffff;//clear pending
+ 2037              		.loc 1 314 0
+ 2038              		.cfi_startproc
+ 2039              		@ args = 0, pretend = 0, frame = 0
+ 2040              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2041              		@ link register save eliminated.
+ 2042              	.LVL129:
+ 315:./la/la_sampling.cpp **** 	__DSB();
+ 2043              		.loc 1 315 0
+ 2044 0860 054B     		ldr	r3, .L194
+ 2045 0862 4FF0FF32 		mov	r2, #-1
+ 2046 0866 5A61     		str	r2, [r3, #20]
+ 2047              	.LBB72:
+ 2048              	.LBB73:
+ 2049              		.loc 2 326 0
+ 2050              		.syntax unified
+ 2051              	@ 326 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cmInstr.h" 1
+ 2052 0868 BFF34F8F 		dsb
+ 2053              	@ 0 "" 2
+ 2054              		.thumb
+ 2055              		.syntax unified
+ 2056              	.LBE73:
+ 2057              	.LBE72:
+ 317:./la/la_sampling.cpp **** 
+ 2058              		.loc 1 317 0
+ 2059 086c 0268     		ldr	r2, [r0]
+ 2060 086e 1A60     		str	r2, [r3]
+ 319:./la/la_sampling.cpp **** }
+ 2061              		.loc 1 319 0
+ 2062 0870 024B     		ldr	r3, .L194+4
+ 2063 0872 1960     		str	r1, [r3]
+ 320:./la/la_sampling.cpp **** 
+ 2064              		.loc 1 320 0
+ 2065 0874 7047     		bx	lr
+ 2066              	.L195:
+ 2067 0876 00BF     		.align	2
+ 2068              	.L194:
+ 2069 0878 003C0140 		.word	1073822720
+ 2070 087c 00000000 		.word	.LANCHOR0
+ 2071              		.cfi_endproc
+ 2072              	.LFE141:
+ 2074              		.align	1
+ 2075              		.global	_ZN7Sampler19ActualTransferCountEv
+ 2076              		.syntax unified
+ 2077              		.thumb
+ 2078              		.thumb_func
+ 2079              		.fpu fpv4-sp-d16
+ 2081              	_ZN7Sampler19ActualTransferCountEv:
+ 2082              	.LFB142:
+ 323:./la/la_sampling.cpp **** 	return transferCount - (DMA2_Stream5->NDTR & ~3);
+ 2083              		.loc 1 323 0
+ 2084              		.cfi_startproc
+ 2085              		@ args = 0, pretend = 0, frame = 0
+ 2086              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2087              		@ link register save eliminated.
+ 2088              	.LVL130:
+ 324:./la/la_sampling.cpp **** }
+ 2089              		.loc 1 324 0
+ 2090 0880 034B     		ldr	r3, .L197
+ 2091 0882 044A     		ldr	r2, .L197+4
+ 2092 0884 5B68     		ldr	r3, [r3, #4]
+ 2093 0886 D068     		ldr	r0, [r2, #12]
+ 2094              	.LVL131:
+ 2095 0888 23F00303 		bic	r3, r3, #3
+ 325:./la/la_sampling.cpp **** 
+ 2096              		.loc 1 325 0
+ 2097 088c C01A     		subs	r0, r0, r3
+ 2098 088e 7047     		bx	lr
+ 2099              	.L198:
+ 2100              		.align	2
+ 2101              	.L197:
+ 2102 0890 88640240 		.word	1073898632
+ 2103 0894 00000000 		.word	.LANCHOR0
+ 2104              		.cfi_endproc
+ 2105              	.LFE142:
+ 2107              		.align	1
+ 2108              		.global	_ZN7Sampler13GetBufferTailEv
+ 2109              		.syntax unified
+ 2110              		.thumb
+ 2111              		.thumb_func
+ 2112              		.fpu fpv4-sp-d16
+ 2114              	_ZN7Sampler13GetBufferTailEv:
+ 2115              	.LFB143:
+ 328:./la/la_sampling.cpp **** 	return (uint8_t*)(samplingRam) + ActualTransferCount() * transferSize;
+ 2116              		.loc 1 328 0
+ 2117              		.cfi_startproc
+ 2118              		@ args = 0, pretend = 0, frame = 0
+ 2119              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2120              	.LVL132:
+ 2121 0898 08B5     		push	{r3, lr}
+ 2122              	.LCFI24:
+ 2123              		.cfi_def_cfa_offset 8
+ 2124              		.cfi_offset 3, -8
+ 2125              		.cfi_offset 14, -4
+ 328:./la/la_sampling.cpp **** 	return (uint8_t*)(samplingRam) + ActualTransferCount() * transferSize;
+ 2126              		.loc 1 328 0
+ 2127 089a 0146     		mov	r1, r0
+ 329:./la/la_sampling.cpp **** }
+ 2128              		.loc 1 329 0
+ 2129 089c FFF7FEFF 		bl	_ZN7Sampler19ActualTransferCountEv
+ 2130              	.LVL133:
+ 330:./la/la_sampling.cpp **** 
+ 2131              		.loc 1 330 0
+ 2132 08a0 024B     		ldr	r3, .L200
+ 329:./la/la_sampling.cpp **** }
+ 2133              		.loc 1 329 0
+ 2134 08a2 CA68     		ldr	r2, [r1, #12]
+ 330:./la/la_sampling.cpp **** 
+ 2135              		.loc 1 330 0
+ 2136 08a4 02FB0030 		mla	r0, r2, r0, r3
+ 2137 08a8 08BD     		pop	{r3, pc}
+ 2138              	.L201:
+ 2139 08aa 00BF     		.align	2
+ 2140              	.L200:
+ 2141 08ac 00000000 		.word	samplingRam
+ 2142              		.cfi_endproc
+ 2143              	.LFE143:
+ 2145              		.align	1
+ 2146              		.global	_ZN7Sampler17GetBufferTailSizeEv
+ 2147              		.syntax unified
+ 2148              		.thumb
+ 2149              		.thumb_func
+ 2150              		.fpu fpv4-sp-d16
+ 2152              	_ZN7Sampler17GetBufferTailSizeEv:
+ 2153              	.LFB144:
+ 333:./la/la_sampling.cpp **** 	return ActualTransferCount() * transferSize;
+ 2154              		.loc 1 333 0
+ 2155              		.cfi_startproc
+ 2156              		@ args = 0, pretend = 0, frame = 0
+ 2157              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2158              	.LVL134:
+ 2159 08b0 08B5     		push	{r3, lr}
+ 2160              	.LCFI25:
+ 2161              		.cfi_def_cfa_offset 8
+ 2162              		.cfi_offset 3, -8
+ 2163              		.cfi_offset 14, -4
+ 333:./la/la_sampling.cpp **** 	return ActualTransferCount() * transferSize;
+ 2164              		.loc 1 333 0
+ 2165 08b2 0146     		mov	r1, r0
+ 334:./la/la_sampling.cpp **** }
+ 2166              		.loc 1 334 0
+ 2167 08b4 FFF7FEFF 		bl	_ZN7Sampler19ActualTransferCountEv
+ 2168              	.LVL135:
+ 2169 08b8 CB68     		ldr	r3, [r1, #12]
+ 335:./la/la_sampling.cpp **** 
+ 2170              		.loc 1 335 0
+ 2171 08ba 5843     		muls	r0, r3, r0
+ 2172 08bc 08BD     		pop	{r3, pc}
+ 2173              		.cfi_endproc
+ 2174              	.LFE144:
+ 2176              		.align	1
+ 2177              		.global	_ZN7Sampler13GetBufferSizeEv
+ 2178              		.syntax unified
+ 2179              		.thumb
+ 2180              		.thumb_func
+ 2181              		.fpu fpv4-sp-d16
+ 2183              	_ZN7Sampler13GetBufferSizeEv:
+ 2184              	.LFB145:
+ 338:./la/la_sampling.cpp **** 	return transferCount * transferSize;
+ 2185              		.loc 1 338 0
+ 2186              		.cfi_startproc
+ 2187              		@ args = 0, pretend = 0, frame = 0
+ 2188              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2189              		@ link register save eliminated.
+ 2190              	.LVL136:
+ 339:./la/la_sampling.cpp **** }
+ 2191              		.loc 1 339 0
+ 2192 08be 024A     		ldr	r2, .L204
+ 2193 08c0 C368     		ldr	r3, [r0, #12]
+ 2194 08c2 D068     		ldr	r0, [r2, #12]
+ 2195              	.LVL137:
+ 340:./la/la_sampling.cpp **** 
+ 2196              		.loc 1 340 0
+ 2197 08c4 5843     		muls	r0, r3, r0
+ 2198 08c6 7047     		bx	lr
+ 2199              	.L205:
+ 2200              		.align	2
+ 2201              	.L204:
+ 2202 08c8 00000000 		.word	.LANCHOR0
+ 2203              		.cfi_endproc
+ 2204              	.LFE145:
+ 2206              		.align	1
+ 2207              		.global	_ZN7Sampler9GetBufferEv
+ 2208              		.syntax unified
+ 2209              		.thumb
+ 2210              		.thumb_func
+ 2211              		.fpu fpv4-sp-d16
+ 2213              	_ZN7Sampler9GetBufferEv:
+ 2214              	.LFB146:
+ 343:./la/la_sampling.cpp **** 	return (uint8_t*)samplingRam;
+ 2215              		.loc 1 343 0
+ 2216              		.cfi_startproc
+ 2217              		@ args = 0, pretend = 0, frame = 0
+ 2218              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2219              		@ link register save eliminated.
+ 2220              	.LVL138:
+ 345:./la/la_sampling.cpp **** 
+ 2221              		.loc 1 345 0
+ 2222 08cc 0048     		ldr	r0, .L207
+ 2223              	.LVL139:
+ 2224 08ce 7047     		bx	lr
+ 2225              	.L208:
+ 2226              		.align	2
+ 2227              	.L207:
+ 2228 08d0 00000000 		.word	samplingRam
+ 2229              		.cfi_endproc
+ 2230              	.LFE146:
+ 2232              		.align	1
+ 2233              		.global	_Z19SamplingClearBufferv
+ 2234              		.syntax unified
+ 2235              		.thumb
+ 2236              		.thumb_func
+ 2237              		.fpu fpv4-sp-d16
+ 2239              	_Z19SamplingClearBufferv:
+ 2240              	.LFB147:
+ 348:./la/la_sampling.cpp **** 	for(int i = 0; i < MAX_SAMPLING_RAM; i++)
+ 2241              		.loc 1 348 0
+ 2242              		.cfi_startproc
+ 2243              		@ args = 0, pretend = 0, frame = 0
+ 2244              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2245              		@ link register save eliminated.
+ 2246              	.LVL140:
+ 2247              	.LBB74:
+ 349:./la/la_sampling.cpp **** 		samplingRam[i] = 0;
+ 2248              		.loc 1 349 0
+ 2249 08d4 0023     		movs	r3, #0
+ 350:./la/la_sampling.cpp **** }
+ 2250              		.loc 1 350 0
+ 2251 08d6 044A     		ldr	r2, .L212
+ 2252 08d8 1946     		mov	r1, r3
+ 2253              	.LVL141:
+ 2254              	.L210:
+ 350:./la/la_sampling.cpp **** }
+ 2255              		.loc 1 350 0 is_stmt 0 discriminator 2
+ 2256 08da 42F82310 		str	r1, [r2, r3, lsl #2]
+ 349:./la/la_sampling.cpp **** 		samplingRam[i] = 0;
+ 2257              		.loc 1 349 0 is_stmt 1 discriminator 2
+ 2258 08de 0133     		adds	r3, r3, #1
+ 2259              	.LVL142:
+ 2260 08e0 B3F5803F 		cmp	r3, #65536
+ 2261 08e4 F9D1     		bne	.L210
+ 2262              	.LBE74:
+ 351:./la/la_sampling.cpp **** 
+ 2263              		.loc 1 351 0
+ 2264 08e6 7047     		bx	lr
+ 2265              	.L213:
+ 2266              		.align	2
+ 2267              	.L212:
+ 2268 08e8 00000000 		.word	samplingRam
+ 2269              		.cfi_endproc
+ 2270              	.LFE147:
+ 2272              		.global	rleTempSamplingRamB
+ 2273              		.global	rleTempSamplingRamA
+ 2274              		.global	samplingRam
+ 2275              		.global	sampler
+ 2276              		.bss
+ 2277              		.align	2
+ 2278              		.set	.LANCHOR0,. + 0
+ 2281              	_ZL16comletionHandler:
+ 2282 0000 00000000 		.space	4
+ 2285              	_ZL31samplingManualToExternalTransit:
+ 2286 0004 00000000 		.space	4
+ 2289              	_ZL8rleValue:
+ 2290 0008 00000000 		.space	4
+ 2293              	_ZL13transferCount:
+ 2294 000c 00000000 		.space	4
+ 2297              	_ZL14rleRepeatCount:
+ 2298 0010 00000000 		.space	4
+ 2301              	_ZL6rlePtr:
+ 2302 0014 00000000 		.space	4
+ 2305              	_ZL13rleDelayCount:
+ 2306 0018 00000000 		.space	4
+ 2309              	_ZL10delayCount:
+ 2310 001c 00000000 		.space	4
+ 2313              	_ZL29samplingRLETailFrameInterrupt:
+ 2314 0020 00000000 		.space	4
+ 2317              	sampler:
+ 2318 0024 00000000 		.space	16
+ 2318      00000000 
+ 2318      00000000 
+ 2318      00000000 
+ 2319              		.section	.ahbram_bss,"aw",%progbits
+ 2320              		.align	2
+ 2321              		.set	.LANCHOR1,. + 0
+ 2324              	rleTempSamplingRamB:
+ 2325 0000 00000000 		.space	512
+ 2325      00000000 
+ 2325      00000000 
+ 2325      00000000 
+ 2325      00000000 
+ 2328              	rleTempSamplingRamA:
+ 2329 0200 00000000 		.space	512
+ 2329      00000000 
+ 2329      00000000 
+ 2329      00000000 
+ 2329      00000000 
+ 2332              	samplingRam:
+ 2333 0400 00000000 		.space	65536
+ 2333      00000000 
+ 2333      00000000 
+ 2333      00000000 
+ 2333      00000000 
+ 2334              		.text
+ 2335              	.Letext0:
+ 2336              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 2337              		.file 5 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 2338              		.file 6 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 2339              		.file 7 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 2340              		.file 8 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 2341              		.file 9 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/st
+ 2342              		.file 10 "./la/la_sampling.h"
+ 2343              		.file 11 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/c++/7.2.1/cstdlib"
+ 2344              		.file 12 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/c++/7.2.1/arm-none-eabi/thu
+ 2345              		.file 13 "/opt/gcc-arm-none-eabi-7-2017-q4-major/lib/gcc/arm-none-eabi/7.2.1/include/stddef.h"
+ 2346              		.file 14 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/lock.h"
+ 2347              		.file 15 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_types.h"
+ 2348              		.file 16 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/reent.h"
+ 2349              		.file 17 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/stdlib.h"
+ 2350              		.file 18 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/c++/7.2.1/stdlib.h"
+ 2351              		.file 19 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/s
+ 2352              		.file 20 "<built-in>"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 la_sampling.cpp
+     /tmp/ccQ6zTrz.s:16     .text:0000000000000000 $t
+     /tmp/ccQ6zTrz.s:22     .text:0000000000000000 _ZL21SamplingFrameCompeltev
+     /tmp/ccQ6zTrz.s:68     .text:0000000000000048 $d
+     /tmp/ccQ6zTrz.s:73     .text:0000000000000050 $t
+     /tmp/ccQ6zTrz.s:79     .text:0000000000000050 _ZL30SamplingExternalEventInterruptv
+     /tmp/ccQ6zTrz.s:123    .text:000000000000007c $d
+     /tmp/ccQ6zTrz.s:127    .text:0000000000000080 $t
+     /tmp/ccQ6zTrz.s:133    .text:0000000000000080 _ZL19SamplingManualStartv
+     /tmp/ccQ6zTrz.s:161    .text:00000000000000a0 $d
+     /tmp/ccQ6zTrz.s:166    .text:00000000000000a8 $t
+     /tmp/ccQ6zTrz.s:172    .text:00000000000000a8 _Z25SamplingRLEFrameInterruptIhLm128ELm127EEvv
+     /tmp/ccQ6zTrz.s:303    .text:0000000000000144 $d
+     /tmp/ccQ6zTrz.s:2332   .ahbram_bss:0000000000000400 samplingRam
+     /tmp/ccQ6zTrz.s:310    .text:0000000000000154 $t
+     /tmp/ccQ6zTrz.s:316    .text:0000000000000154 _Z29SamplingRLETailFrameInterruptIhLm128ELm127EEvv
+     /tmp/ccQ6zTrz.s:519    .text:0000000000000258 $d
+     /tmp/ccQ6zTrz.s:526    .text:0000000000000268 $t
+     /tmp/ccQ6zTrz.s:532    .text:0000000000000268 _Z25SamplingRLEFrameInterruptItLm32768ELm32767EEvv
+     /tmp/ccQ6zTrz.s:670    .text:0000000000000318 $d
+     /tmp/ccQ6zTrz.s:677    .text:0000000000000328 $t
+     /tmp/ccQ6zTrz.s:683    .text:0000000000000328 _Z29SamplingRLETailFrameInterruptItLm32768ELm32767EEvv
+     /tmp/ccQ6zTrz.s:892    .text:000000000000043c $d
+     /tmp/ccQ6zTrz.s:899    .text:000000000000044c $t
+     /tmp/ccQ6zTrz.s:905    .text:000000000000044c _ZL33SamplingRLEExternalEventInterruptv
+     /tmp/ccQ6zTrz.s:946    .text:0000000000000470 $d
+     /tmp/ccQ6zTrz.s:953    .text._ZN19InterruptController13EnableChannelE4IRQnhhPFvvE:0000000000000000 $t
+     /tmp/ccQ6zTrz.s:960    .text._ZN19InterruptController13EnableChannelE4IRQnhhPFvvE:0000000000000000 _ZN19InterruptController13EnableChannelE4IRQnhhPFvvE
+     /tmp/ccQ6zTrz.s:1067   .text._ZN19InterruptController13EnableChannelE4IRQnhhPFvvE:0000000000000058 $d
+     /tmp/ccQ6zTrz.s:1072   .text:000000000000047c $t
+     /tmp/ccQ6zTrz.s:1079   .text:000000000000047c _ZN7Sampler13SetBufferSizeEm
+     /tmp/ccQ6zTrz.s:1095   .text:0000000000000484 $d
+     /tmp/ccQ6zTrz.s:1099   .text:0000000000000488 $t
+     /tmp/ccQ6zTrz.s:1106   .text:0000000000000488 _ZN7Sampler13SetDelayCountEm
+     /tmp/ccQ6zTrz.s:1125   .text:0000000000000494 $d
+     /tmp/ccQ6zTrz.s:1129   .text:0000000000000498 $t
+     /tmp/ccQ6zTrz.s:1136   .text:0000000000000498 _ZN7Sampler18SetupSamplingTimerEv
+     /tmp/ccQ6zTrz.s:1194   .text:00000000000004d0 $d
+     /tmp/ccQ6zTrz.s:1198   .text:00000000000004d4 $t
+     /tmp/ccQ6zTrz.s:1205   .text:00000000000004d4 _ZN7Sampler19CalcDMATransferSizeEv
+     /tmp/ccQ6zTrz.s:1259   .text:00000000000004fc _ZN7Sampler16SetupSamplingDMAEPvm
+     /tmp/ccQ6zTrz.s:1315   .text:0000000000000530 $d
+     /tmp/ccQ6zTrz.s:1320   .text:0000000000000538 $t
+     /tmp/ccQ6zTrz.s:1327   .text:0000000000000538 _ZN7Sampler19SetupRLESamplingDMAEPvS0_m
+     /tmp/ccQ6zTrz.s:1428   .text:00000000000005a0 $d
+     /tmp/ccQ6zTrz.s:1440   .text:00000000000005c4 $t
+     /tmp/ccQ6zTrz.s:1447   .text:00000000000005c4 _ZN7Sampler23SetupRegularEXTITriggerEPFvvE
+     /tmp/ccQ6zTrz.s:1691   .text:0000000000000700 $d
+     /tmp/ccQ6zTrz.s:1701   .text:0000000000000714 $t
+     /tmp/ccQ6zTrz.s:1708   .text:0000000000000714 _ZN7Sampler15SetupDelayTimerEv
+     /tmp/ccQ6zTrz.s:1770   .text:0000000000000758 $d
+     /tmp/ccQ6zTrz.s:1777   .text:0000000000000768 $t
+     /tmp/ccQ6zTrz.s:1784   .text:0000000000000768 _ZN7Sampler12SetupRegularEv
+     /tmp/ccQ6zTrz.s:1828   .text:0000000000000790 $d
+     /tmp/ccQ6zTrz.s:1834   .text:000000000000079c $t
+     /tmp/ccQ6zTrz.s:1841   .text:000000000000079c _ZN7Sampler8SetupRLEEv
+     /tmp/ccQ6zTrz.s:1925   .text:00000000000007ec $d
+     /tmp/ccQ6zTrz.s:1933   .text:0000000000000800 $t
+     /tmp/ccQ6zTrz.s:1940   .text:0000000000000800 _ZN7Sampler5StartEv
+     /tmp/ccQ6zTrz.s:1985   .text:0000000000000830 $d
+     /tmp/ccQ6zTrz.s:1991   .text:000000000000083c $t
+     /tmp/ccQ6zTrz.s:1998   .text:000000000000083c _ZN7Sampler4StopEv
+     /tmp/ccQ6zTrz.s:2023   .text:0000000000000858 $d
+     /tmp/ccQ6zTrz.s:2028   .text:0000000000000860 $t
+     /tmp/ccQ6zTrz.s:2035   .text:0000000000000860 _ZN7Sampler3ArmEPFvvE
+     /tmp/ccQ6zTrz.s:2069   .text:0000000000000878 $d
+     /tmp/ccQ6zTrz.s:2074   .text:0000000000000880 $t
+     /tmp/ccQ6zTrz.s:2081   .text:0000000000000880 _ZN7Sampler19ActualTransferCountEv
+     /tmp/ccQ6zTrz.s:2102   .text:0000000000000890 $d
+     /tmp/ccQ6zTrz.s:2107   .text:0000000000000898 $t
+     /tmp/ccQ6zTrz.s:2114   .text:0000000000000898 _ZN7Sampler13GetBufferTailEv
+     /tmp/ccQ6zTrz.s:2141   .text:00000000000008ac $d
+     /tmp/ccQ6zTrz.s:2145   .text:00000000000008b0 $t
+     /tmp/ccQ6zTrz.s:2152   .text:00000000000008b0 _ZN7Sampler17GetBufferTailSizeEv
+     /tmp/ccQ6zTrz.s:2183   .text:00000000000008be _ZN7Sampler13GetBufferSizeEv
+     /tmp/ccQ6zTrz.s:2202   .text:00000000000008c8 $d
+     /tmp/ccQ6zTrz.s:2206   .text:00000000000008cc $t
+     /tmp/ccQ6zTrz.s:2213   .text:00000000000008cc _ZN7Sampler9GetBufferEv
+     /tmp/ccQ6zTrz.s:2228   .text:00000000000008d0 $d
+     /tmp/ccQ6zTrz.s:2232   .text:00000000000008d4 $t
+     /tmp/ccQ6zTrz.s:2239   .text:00000000000008d4 _Z19SamplingClearBufferv
+     /tmp/ccQ6zTrz.s:2268   .text:00000000000008e8 $d
+     /tmp/ccQ6zTrz.s:2324   .ahbram_bss:0000000000000000 rleTempSamplingRamB
+     /tmp/ccQ6zTrz.s:2328   .ahbram_bss:0000000000000200 rleTempSamplingRamA
+     /tmp/ccQ6zTrz.s:2317   .bss:0000000000000024 sampler
+     /tmp/ccQ6zTrz.s:2277   .bss:0000000000000000 $d
+     /tmp/ccQ6zTrz.s:2281   .bss:0000000000000000 _ZL16comletionHandler
+     /tmp/ccQ6zTrz.s:2285   .bss:0000000000000004 _ZL31samplingManualToExternalTransit
+     /tmp/ccQ6zTrz.s:2289   .bss:0000000000000008 _ZL8rleValue
+     /tmp/ccQ6zTrz.s:2293   .bss:000000000000000c _ZL13transferCount
+     /tmp/ccQ6zTrz.s:2297   .bss:0000000000000010 _ZL14rleRepeatCount
+     /tmp/ccQ6zTrz.s:2301   .bss:0000000000000014 _ZL6rlePtr
+     /tmp/ccQ6zTrz.s:2305   .bss:0000000000000018 _ZL13rleDelayCount
+     /tmp/ccQ6zTrz.s:2309   .bss:000000000000001c _ZL10delayCount
+     /tmp/ccQ6zTrz.s:2313   .bss:0000000000000020 _ZL29samplingRLETailFrameInterrupt
+     /tmp/ccQ6zTrz.s:2320   .ahbram_bss:0000000000000000 $d
+
+UNDEFINED SYMBOLS
+_ZN19InterruptController10SetHandlerE4IRQnPFvvE
+RCC_APB2PeriphClockCmd
+RCC_AHB1PeriphClockCmd

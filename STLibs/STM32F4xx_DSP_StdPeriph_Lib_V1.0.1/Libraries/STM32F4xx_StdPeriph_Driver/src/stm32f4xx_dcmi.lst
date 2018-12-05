@@ -1,0 +1,1136 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"stm32f4xx_dcmi.c"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.global	DCMI_DeInit
+  18              		.syntax unified
+  19              		.thumb
+  20              		.thumb_func
+  21              		.fpu fpv4-sp-d16
+  23              	DCMI_DeInit:
+  24              	.LFB110:
+  25              		.file 1 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/st
+   1:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+   2:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   ******************************************************************************
+   3:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @file    stm32f4xx_dcmi.c
+   4:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @author  MCD Application Team
+   5:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @version V1.0.2
+   6:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @date    05-March-2012
+   7:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief   This file provides firmware functions to manage the following 
+   8:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          functionalities of the DCMI peripheral:           
+   9:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *           - Initialization and Configuration
+  10:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *           - Image capture functions  
+  11:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *           - Interrupts and flags management
+  12:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  13:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  @verbatim  
+  14:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  
+  15:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *        
+  16:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          ===================================================================
+  17:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                                 How to use this driver
+  18:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          ===================================================================  
+  19:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         
+  20:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         The sequence below describes how to use this driver to capture image
+  21:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         from a camera module connected to the DCMI Interface.
+  22:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         This sequence does not take into account the configuration of the  
+  23:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         camera module, which should be made before to configure and enable
+  24:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         the DCMI to capture images.
+  25:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *           
+  26:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          1. Enable the clock for the DCMI and associated GPIOs using the following functions:
+  27:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_DCMI, ENABLE);
+  28:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOx, ENABLE);
+  29:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  30:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          2. DCMI pins configuration 
+  31:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *             - Connect the involved DCMI pins to AF13 using the following function 
+  32:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 GPIO_PinAFConfig(GPIOx, GPIO_PinSourcex, GPIO_AF_DCMI); 
+  33:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *             - Configure these DCMI pins in alternate function mode by calling the function
+  34:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 GPIO_Init();
+  35:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *    
+  36:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          3. Declare a DCMI_InitTypeDef structure, for example:
+  37:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 DCMI_InitTypeDef  DCMI_InitStructure;
+  38:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *             and fill the DCMI_InitStructure variable with the allowed values
+  39:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *             of the structure member.
+  40:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  
+  41:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          4. Initialize the DCMI interface by calling the function
+  42:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 DCMI_Init(&DCMI_InitStructure); 
+  43:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  
+  44:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          5. Configure the DMA2_Stream1 channel1 to transfer Data from DCMI DR
+  45:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *             register to the destination memory buffer.
+  46:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  
+  47:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          6. Enable DCMI interface using the function
+  48:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 DCMI_Cmd(ENABLE);
+  49:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 
+  50:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         7. Start the image capture using the function
+  51:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 DCMI_CaptureCmd(ENABLE);
+  52:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *                 
+  53:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         8. At this stage the DCMI interface waits for the first start of frame,
+  54:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            then a DMA request is generated continuously/once (depending on the
+  55:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            mode used, Continuous/Snapshot) to transfer the received data into
+  56:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            the destination memory. 
+  57:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *   
+  58:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  @note  If you need to capture only a rectangular window from the received
+  59:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         image, you have to use the DCMI_CROPConfig() function to configure 
+  60:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         the coordinates and size of the window to be captured, then enable 
+  61:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         the Crop feature using DCMI_CROPCmd(ENABLE);  
+  62:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         In this case, the Crop configuration should be made before to enable
+  63:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         and start the DCMI interface. 
+  64:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *        
+  65:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  @endverbatim   
+  66:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *  
+  67:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   ******************************************************************************
+  68:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @attention
+  69:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  70:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  71:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  72:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  73:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * You may not use this file except in compliance with the License.
+  74:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * You may obtain a copy of the License at:
+  75:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  76:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *        http://www.st.com/software_license_agreement_liberty_v2
+  77:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  78:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * Unless required by applicable law or agreed to in writing, software 
+  79:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * distributed under the License is distributed on an "AS IS" BASIS, 
+  80:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  81:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * See the License for the specific language governing permissions and
+  82:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * limitations under the License.
+  83:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *
+  84:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   ******************************************************************************
+  85:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+  86:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+  87:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Includes ------------------------------------------------------------------*/
+  88:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** #include "stm32f4xx_dcmi.h"
+  89:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** #include "stm32f4xx_rcc.h"
+  90:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+  91:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @addtogroup STM32F4xx_StdPeriph_Driver
+  92:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+  93:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+  94:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+  95:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @defgroup DCMI 
+  96:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief DCMI driver modules
+  97:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+  98:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */ 
+  99:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 100:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private typedef -----------------------------------------------------------*/
+ 101:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private define ------------------------------------------------------------*/
+ 102:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private macro -------------------------------------------------------------*/
+ 103:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private variables ---------------------------------------------------------*/
+ 104:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private function prototypes -----------------------------------------------*/
+ 105:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /* Private functions ---------------------------------------------------------*/
+ 106:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 107:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @defgroup DCMI_Private_Functions
+ 108:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+ 109:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */ 
+ 110:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 111:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @defgroup DCMI_Group1 Initialization and Configuration functions
+ 112:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *  @brief   Initialization and Configuration functions 
+ 113:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *
+ 114:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @verbatim   
+ 115:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================
+ 116:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   Initialization and Configuration functions
+ 117:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================  
+ 118:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 119:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @endverbatim
+ 120:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+ 121:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 122:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 123:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 124:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Deinitializes the DCMI registers to their default reset values.
+ 125:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  None
+ 126:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 127:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 128:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_DeInit(void)
+ 129:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+  26              		.loc 1 129 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              		@ link register save eliminated.
+ 130:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CR = 0x0;
+  31              		.loc 1 130 0
+  32 0000 054B     		ldr	r3, .L2
+  33 0002 0022     		movs	r2, #0
+ 131:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->IER = 0x0;
+ 132:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->ICR = 0x1F;
+  34              		.loc 1 132 0
+  35 0004 1F21     		movs	r1, #31
+ 130:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CR = 0x0;
+  36              		.loc 1 130 0
+  37 0006 1A60     		str	r2, [r3]
+ 131:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->IER = 0x0;
+  38              		.loc 1 131 0
+  39 0008 DA60     		str	r2, [r3, #12]
+  40              		.loc 1 132 0
+  41 000a 5961     		str	r1, [r3, #20]
+ 133:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->ESCR = 0x0;
+  42              		.loc 1 133 0
+  43 000c 9A61     		str	r2, [r3, #24]
+ 134:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->ESUR = 0x0;
+  44              		.loc 1 134 0
+  45 000e DA61     		str	r2, [r3, #28]
+ 135:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CWSTRTR = 0x0;
+  46              		.loc 1 135 0
+  47 0010 1A62     		str	r2, [r3, #32]
+ 136:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CWSIZER = 0x0;
+  48              		.loc 1 136 0
+  49 0012 5A62     		str	r2, [r3, #36]
+ 137:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+  50              		.loc 1 137 0
+  51 0014 7047     		bx	lr
+  52              	.L3:
+  53 0016 00BF     		.align	2
+  54              	.L2:
+  55 0018 00000550 		.word	1342504960
+  56              		.cfi_endproc
+  57              	.LFE110:
+  59              		.align	1
+  60              		.global	DCMI_Init
+  61              		.syntax unified
+  62              		.thumb
+  63              		.thumb_func
+  64              		.fpu fpv4-sp-d16
+  66              	DCMI_Init:
+  67              	.LFB111:
+ 138:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 139:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 140:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Initializes the DCMI according to the specified parameters in the DCMI_InitStruct.
+ 141:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_InitStruct: pointer to a DCMI_InitTypeDef structure that contains 
+ 142:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         the configuration information for the DCMI.
+ 143:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 144:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 145:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_Init(DCMI_InitTypeDef* DCMI_InitStruct)
+ 146:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+  68              		.loc 1 146 0
+  69              		.cfi_startproc
+  70              		@ args = 0, pretend = 0, frame = 0
+  71              		@ frame_needed = 0, uses_anonymous_args = 0
+  72              	.LVL0:
+ 147:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   uint32_t temp = 0x0;
+ 148:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 149:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 150:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_CAPTURE_MODE(DCMI_InitStruct->DCMI_CaptureMode));
+ 151:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_SYNCHRO(DCMI_InitStruct->DCMI_SynchroMode));
+ 152:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_PCKPOLARITY(DCMI_InitStruct->DCMI_PCKPolarity));
+ 153:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_VSPOLARITY(DCMI_InitStruct->DCMI_VSPolarity));
+ 154:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_HSPOLARITY(DCMI_InitStruct->DCMI_HSPolarity));
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_CAPTURE_RATE(DCMI_InitStruct->DCMI_CaptureRate));
+ 156:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_EXTENDED_DATA(DCMI_InitStruct->DCMI_ExtendedDataMode));
+ 157:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 158:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* The DCMI configuration registers should be programmed correctly before 
+ 159:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   enabling the CR_ENABLE Bit and the CR_CAPTURE Bit */
+ 160:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CR &= ~(DCMI_CR_ENABLE | DCMI_CR_CAPTURE);
+  73              		.loc 1 160 0
+  74 001c 0E49     		ldr	r1, .L5
+  75 001e 0B68     		ldr	r3, [r1]
+  76 0020 23F48043 		bic	r3, r3, #16384
+  77 0024 23F00103 		bic	r3, r3, #1
+ 146:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   uint32_t temp = 0x0;
+  78              		.loc 1 146 0
+  79 0028 10B5     		push	{r4, lr}
+  80              	.LCFI0:
+  81              		.cfi_def_cfa_offset 8
+  82              		.cfi_offset 4, -8
+  83              		.cfi_offset 14, -4
+ 161:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****    
+ 162:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Reset the old DCMI configuration */
+ 163:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   temp = DCMI->CR;
+ 164:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   temp &= ~((uint32_t)DCMI_CR_CM     | DCMI_CR_ESS   | DCMI_CR_PCKPOL |
+ 166:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                       DCMI_CR_HSPOL  | DCMI_CR_VSPOL | DCMI_CR_FCRC_0 | 
+ 167:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                       DCMI_CR_FCRC_1 | DCMI_CR_EDM_0 | DCMI_CR_EDM_1); 
+ 168:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   
+ 169:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Sets the new configuration of the DCMI peripheral */
+ 170:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   temp |= ((uint32_t)DCMI_InitStruct->DCMI_CaptureMode |
+ 171:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_SynchroMode |
+ 172:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_PCKPolarity |
+ 173:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_VSPolarity |
+ 174:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_HSPolarity |
+ 175:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_CaptureRate |
+  84              		.loc 1 175 0
+  85 002a 4488     		ldrh	r4, [r0, #2]
+ 160:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****    
+  86              		.loc 1 160 0
+  87 002c 0B60     		str	r3, [r1]
+  88              		.loc 1 175 0
+  89 002e 0388     		ldrh	r3, [r0]
+ 163:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+  90              		.loc 1 163 0
+  91 0030 0A68     		ldr	r2, [r1]
+  92              	.LVL1:
+  93              		.loc 1 175 0
+  94 0032 2343     		orrs	r3, r3, r4
+  95 0034 8488     		ldrh	r4, [r0, #4]
+  96 0036 2343     		orrs	r3, r3, r4
+  97 0038 C488     		ldrh	r4, [r0, #6]
+  98 003a 2343     		orrs	r3, r3, r4
+  99 003c 0489     		ldrh	r4, [r0, #8]
+ 100 003e 2343     		orrs	r3, r3, r4
+ 101 0040 4489     		ldrh	r4, [r0, #10]
+ 102 0042 8089     		ldrh	r0, [r0, #12]
+ 103              	.LVL2:
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                       DCMI_CR_HSPOL  | DCMI_CR_VSPOL | DCMI_CR_FCRC_0 | 
+ 104              		.loc 1 165 0
+ 105 0044 22F47F62 		bic	r2, r2, #4080
+ 106              	.LVL3:
+ 107              		.loc 1 175 0
+ 108 0048 2343     		orrs	r3, r3, r4
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                       DCMI_CR_HSPOL  | DCMI_CR_VSPOL | DCMI_CR_FCRC_0 | 
+ 109              		.loc 1 165 0
+ 110 004a 22F00202 		bic	r2, r2, #2
+ 111              	.LVL4:
+ 112              		.loc 1 175 0
+ 113 004e 0343     		orrs	r3, r3, r0
+ 170:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_SynchroMode |
+ 114              		.loc 1 170 0
+ 115 0050 1343     		orrs	r3, r3, r2
+ 116              	.LVL5:
+ 176:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                      DCMI_InitStruct->DCMI_ExtendedDataMode);
+ 177:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 178:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CR = temp;                              
+ 117              		.loc 1 178 0
+ 118 0052 0B60     		str	r3, [r1]
+ 179:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 119              		.loc 1 179 0
+ 120 0054 10BD     		pop	{r4, pc}
+ 121              	.L6:
+ 122 0056 00BF     		.align	2
+ 123              	.L5:
+ 124 0058 00000550 		.word	1342504960
+ 125              		.cfi_endproc
+ 126              	.LFE111:
+ 128              		.align	1
+ 129              		.global	DCMI_StructInit
+ 130              		.syntax unified
+ 131              		.thumb
+ 132              		.thumb_func
+ 133              		.fpu fpv4-sp-d16
+ 135              	DCMI_StructInit:
+ 136              	.LFB112:
+ 180:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 181:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 182:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Fills each DCMI_InitStruct member with its default value.
+ 183:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_InitStruct : pointer to a DCMI_InitTypeDef structure which will
+ 184:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         be initialized.
+ 185:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 186:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 187:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_StructInit(DCMI_InitTypeDef* DCMI_InitStruct)
+ 188:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 137              		.loc 1 188 0
+ 138              		.cfi_startproc
+ 139              		@ args = 0, pretend = 0, frame = 0
+ 140              		@ frame_needed = 0, uses_anonymous_args = 0
+ 141              		@ link register save eliminated.
+ 142              	.LVL6:
+ 189:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Set the default configuration */
+ 190:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_CaptureMode = DCMI_CaptureMode_Continuous;
+ 143              		.loc 1 190 0
+ 144 005c 0023     		movs	r3, #0
+ 145 005e 0380     		strh	r3, [r0]	@ movhi
+ 191:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_SynchroMode = DCMI_SynchroMode_Hardware;
+ 146              		.loc 1 191 0
+ 147 0060 4380     		strh	r3, [r0, #2]	@ movhi
+ 192:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_PCKPolarity = DCMI_PCKPolarity_Falling;
+ 148              		.loc 1 192 0
+ 149 0062 8380     		strh	r3, [r0, #4]	@ movhi
+ 193:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_VSPolarity = DCMI_VSPolarity_Low;
+ 150              		.loc 1 193 0
+ 151 0064 C380     		strh	r3, [r0, #6]	@ movhi
+ 194:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_HSPolarity = DCMI_HSPolarity_Low;
+ 152              		.loc 1 194 0
+ 153 0066 0381     		strh	r3, [r0, #8]	@ movhi
+ 195:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_CaptureRate = DCMI_CaptureRate_All_Frame;
+ 154              		.loc 1 195 0
+ 155 0068 4381     		strh	r3, [r0, #10]	@ movhi
+ 196:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI_InitStruct->DCMI_ExtendedDataMode = DCMI_ExtendedDataMode_8b;
+ 156              		.loc 1 196 0
+ 157 006a 8381     		strh	r3, [r0, #12]	@ movhi
+ 197:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 158              		.loc 1 197 0
+ 159 006c 7047     		bx	lr
+ 160              		.cfi_endproc
+ 161              	.LFE112:
+ 163              		.align	1
+ 164              		.global	DCMI_CROPConfig
+ 165              		.syntax unified
+ 166              		.thumb
+ 167              		.thumb_func
+ 168              		.fpu fpv4-sp-d16
+ 170              	DCMI_CROPConfig:
+ 171              	.LFB113:
+ 198:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 199:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 200:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Initializes the DCMI peripheral CROP mode according to the specified
+ 201:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         parameters in the DCMI_CROPInitStruct.
+ 202:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @note   This function should be called before to enable and start the DCMI interface.   
+ 203:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_CROPInitStruct:  pointer to a DCMI_CROPInitTypeDef structure that 
+ 204:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         contains the configuration information for the DCMI peripheral CROP mode.
+ 205:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 206:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 207:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_CROPConfig(DCMI_CROPInitTypeDef* DCMI_CROPInitStruct)
+ 208:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {  
+ 172              		.loc 1 208 0
+ 173              		.cfi_startproc
+ 174              		@ args = 0, pretend = 0, frame = 0
+ 175              		@ frame_needed = 0, uses_anonymous_args = 0
+ 176              		@ link register save eliminated.
+ 177              	.LVL7:
+ 209:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Sets the CROP window coordinates */
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CWSTRTR = (uint32_t)((uint32_t)DCMI_CROPInitStruct->DCMI_HorizontalOffsetCount |
+ 211:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   ((uint32_t)DCMI_CROPInitStruct->DCMI_VerticalStartLine << 16));
+ 178              		.loc 1 211 0
+ 179 006e 0288     		ldrh	r2, [r0]
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   ((uint32_t)DCMI_CROPInitStruct->DCMI_VerticalStartLine << 16));
+ 180              		.loc 1 210 0
+ 181 0070 4388     		ldrh	r3, [r0, #2]
+ 212:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 213:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Sets the CROP window size */
+ 214:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->CWSIZER = (uint32_t)(DCMI_CROPInitStruct->DCMI_CaptureCount |
+ 215:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   ((uint32_t)DCMI_CROPInitStruct->DCMI_VerticalLineCount << 16));
+ 182              		.loc 1 215 0
+ 183 0072 8188     		ldrh	r1, [r0, #4]
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   ((uint32_t)DCMI_CROPInitStruct->DCMI_VerticalStartLine << 16));
+ 184              		.loc 1 210 0
+ 185 0074 43EA0243 		orr	r3, r3, r2, lsl #16
+ 186 0078 034A     		ldr	r2, .L9
+ 187 007a 1362     		str	r3, [r2, #32]
+ 214:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   ((uint32_t)DCMI_CROPInitStruct->DCMI_VerticalLineCount << 16));
+ 188              		.loc 1 214 0
+ 189 007c C388     		ldrh	r3, [r0, #6]
+ 190 007e 43EA0143 		orr	r3, r3, r1, lsl #16
+ 191 0082 5362     		str	r3, [r2, #36]
+ 216:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 192              		.loc 1 216 0
+ 193 0084 7047     		bx	lr
+ 194              	.L10:
+ 195 0086 00BF     		.align	2
+ 196              	.L9:
+ 197 0088 00000550 		.word	1342504960
+ 198              		.cfi_endproc
+ 199              	.LFE113:
+ 201              		.align	1
+ 202              		.global	DCMI_CROPCmd
+ 203              		.syntax unified
+ 204              		.thumb
+ 205              		.thumb_func
+ 206              		.fpu fpv4-sp-d16
+ 208              	DCMI_CROPCmd:
+ 209              	.LFB114:
+ 217:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 218:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 219:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Enables or disables the DCMI Crop feature.
+ 220:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @note   This function should be called before to enable and start the DCMI interface.
+ 221:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  NewState: new state of the DCMI Crop feature. 
+ 222:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be: ENABLE or DISABLE.
+ 223:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 224:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 225:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_CROPCmd(FunctionalState NewState)
+ 226:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 210              		.loc 1 226 0
+ 211              		.cfi_startproc
+ 212              		@ args = 0, pretend = 0, frame = 0
+ 213              		@ frame_needed = 0, uses_anonymous_args = 0
+ 214              		@ link register save eliminated.
+ 215              	.LVL8:
+ 216 008c 044B     		ldr	r3, .L15
+ 227:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 228:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));
+ 229:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     
+ 230:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (NewState != DISABLE)
+ 231:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 232:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Enable the DCMI Crop feature */
+ 233:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR |= (uint32_t)DCMI_CR_CROP;
+ 217              		.loc 1 233 0
+ 218 008e 1A68     		ldr	r2, [r3]
+ 230:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 219              		.loc 1 230 0
+ 220 0090 18B1     		cbz	r0, .L12
+ 221              		.loc 1 233 0
+ 222 0092 42F00402 		orr	r2, r2, #4
+ 223              	.L14:
+ 234:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 235:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 236:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 237:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Disable the DCMI Crop feature */
+ 238:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR &= ~(uint32_t)DCMI_CR_CROP;
+ 224              		.loc 1 238 0
+ 225 0096 1A60     		str	r2, [r3]
+ 239:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 240:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 226              		.loc 1 240 0
+ 227 0098 7047     		bx	lr
+ 228              	.L12:
+ 238:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 229              		.loc 1 238 0
+ 230 009a 22F00402 		bic	r2, r2, #4
+ 231 009e FAE7     		b	.L14
+ 232              	.L16:
+ 233              		.align	2
+ 234              	.L15:
+ 235 00a0 00000550 		.word	1342504960
+ 236              		.cfi_endproc
+ 237              	.LFE114:
+ 239              		.align	1
+ 240              		.global	DCMI_SetEmbeddedSynchroCodes
+ 241              		.syntax unified
+ 242              		.thumb
+ 243              		.thumb_func
+ 244              		.fpu fpv4-sp-d16
+ 246              	DCMI_SetEmbeddedSynchroCodes:
+ 247              	.LFB115:
+ 241:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 242:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 243:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Sets the embedded synchronization codes
+ 244:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_CodesInitTypeDef: pointer to a DCMI_CodesInitTypeDef structure that
+ 245:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *         contains the embedded synchronization codes for the DCMI peripheral.
+ 246:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 247:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 248:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_SetEmbeddedSynchroCodes(DCMI_CodesInitTypeDef* DCMI_CodesInitStruct)
+ 249:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 248              		.loc 1 249 0
+ 249              		.cfi_startproc
+ 250              		@ args = 0, pretend = 0, frame = 0
+ 251              		@ frame_needed = 0, uses_anonymous_args = 0
+ 252              		@ link register save eliminated.
+ 253              	.LVL9:
+ 250:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->ESCR = (uint32_t)(DCMI_CodesInitStruct->DCMI_FrameStartCode |
+ 254              		.loc 1 250 0
+ 255 00a4 014B     		ldr	r3, .L18
+ 256 00a6 0268     		ldr	r2, [r0]	@ unaligned
+ 257 00a8 9A61     		str	r2, [r3, #24]
+ 251:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                           ((uint32_t)DCMI_CodesInitStruct->DCMI_LineStartCode << 8)|
+ 252:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                           ((uint32_t)DCMI_CodesInitStruct->DCMI_LineEndCode << 16)|
+ 253:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                           ((uint32_t)DCMI_CodesInitStruct->DCMI_FrameEndCode << 24));
+ 254:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 258              		.loc 1 254 0
+ 259 00aa 7047     		bx	lr
+ 260              	.L19:
+ 261              		.align	2
+ 262              	.L18:
+ 263 00ac 00000550 		.word	1342504960
+ 264              		.cfi_endproc
+ 265              	.LFE115:
+ 267              		.align	1
+ 268              		.global	DCMI_JPEGCmd
+ 269              		.syntax unified
+ 270              		.thumb
+ 271              		.thumb_func
+ 272              		.fpu fpv4-sp-d16
+ 274              	DCMI_JPEGCmd:
+ 275              	.LFB116:
+ 255:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 256:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 257:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Enables or disables the DCMI JPEG format.
+ 258:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @note   The Crop and Embedded Synchronization features cannot be used in this mode.  
+ 259:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  NewState: new state of the DCMI JPEG format. 
+ 260:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be: ENABLE or DISABLE.
+ 261:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 262:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 263:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_JPEGCmd(FunctionalState NewState)
+ 264:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 276              		.loc 1 264 0
+ 277              		.cfi_startproc
+ 278              		@ args = 0, pretend = 0, frame = 0
+ 279              		@ frame_needed = 0, uses_anonymous_args = 0
+ 280              		@ link register save eliminated.
+ 281              	.LVL10:
+ 282 00b0 044B     		ldr	r3, .L24
+ 265:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 266:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));
+ 267:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  
+ 268:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (NewState != DISABLE)
+ 269:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 270:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Enable the DCMI JPEG format */
+ 271:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR |= (uint32_t)DCMI_CR_JPEG;
+ 283              		.loc 1 271 0
+ 284 00b2 1A68     		ldr	r2, [r3]
+ 268:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 285              		.loc 1 268 0
+ 286 00b4 18B1     		cbz	r0, .L21
+ 287              		.loc 1 271 0
+ 288 00b6 42F00802 		orr	r2, r2, #8
+ 289              	.L23:
+ 272:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 273:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 274:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 275:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Disable the DCMI JPEG format */
+ 276:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR &= ~(uint32_t)DCMI_CR_JPEG;
+ 290              		.loc 1 276 0
+ 291 00ba 1A60     		str	r2, [r3]
+ 277:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 278:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 292              		.loc 1 278 0
+ 293 00bc 7047     		bx	lr
+ 294              	.L21:
+ 276:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 295              		.loc 1 276 0
+ 296 00be 22F00802 		bic	r2, r2, #8
+ 297 00c2 FAE7     		b	.L23
+ 298              	.L25:
+ 299              		.align	2
+ 300              	.L24:
+ 301 00c4 00000550 		.word	1342504960
+ 302              		.cfi_endproc
+ 303              	.LFE116:
+ 305              		.align	1
+ 306              		.global	DCMI_Cmd
+ 307              		.syntax unified
+ 308              		.thumb
+ 309              		.thumb_func
+ 310              		.fpu fpv4-sp-d16
+ 312              	DCMI_Cmd:
+ 313              	.LFB117:
+ 279:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 280:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @}
+ 281:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 282:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 283:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @defgroup DCMI_Group2 Image capture functions
+ 284:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *  @brief   Image capture functions
+ 285:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *
+ 286:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @verbatim   
+ 287:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================
+ 288:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                                  Image capture functions
+ 289:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================  
+ 290:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 291:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @endverbatim
+ 292:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+ 293:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 294:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 295:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 296:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Enables or disables the DCMI interface.
+ 297:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  NewState: new state of the DCMI interface. 
+ 298:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be: ENABLE or DISABLE.
+ 299:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 300:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 301:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_Cmd(FunctionalState NewState)
+ 302:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 314              		.loc 1 302 0
+ 315              		.cfi_startproc
+ 316              		@ args = 0, pretend = 0, frame = 0
+ 317              		@ frame_needed = 0, uses_anonymous_args = 0
+ 318              		@ link register save eliminated.
+ 319              	.LVL11:
+ 320 00c8 044B     		ldr	r3, .L30
+ 303:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 304:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));
+ 305:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 306:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (NewState != DISABLE)
+ 307:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 308:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Enable the DCMI by setting ENABLE bit */
+ 309:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR |= (uint32_t)DCMI_CR_ENABLE;
+ 321              		.loc 1 309 0
+ 322 00ca 1A68     		ldr	r2, [r3]
+ 306:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 323              		.loc 1 306 0
+ 324 00cc 18B1     		cbz	r0, .L27
+ 325              		.loc 1 309 0
+ 326 00ce 42F48042 		orr	r2, r2, #16384
+ 327              	.L29:
+ 310:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 311:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 312:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 313:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Disable the DCMI by clearing ENABLE bit */
+ 314:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR &= ~(uint32_t)DCMI_CR_ENABLE;
+ 328              		.loc 1 314 0
+ 329 00d2 1A60     		str	r2, [r3]
+ 315:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 316:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 330              		.loc 1 316 0
+ 331 00d4 7047     		bx	lr
+ 332              	.L27:
+ 314:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 333              		.loc 1 314 0
+ 334 00d6 22F48042 		bic	r2, r2, #16384
+ 335 00da FAE7     		b	.L29
+ 336              	.L31:
+ 337              		.align	2
+ 338              	.L30:
+ 339 00dc 00000550 		.word	1342504960
+ 340              		.cfi_endproc
+ 341              	.LFE117:
+ 343              		.align	1
+ 344              		.global	DCMI_CaptureCmd
+ 345              		.syntax unified
+ 346              		.thumb
+ 347              		.thumb_func
+ 348              		.fpu fpv4-sp-d16
+ 350              	DCMI_CaptureCmd:
+ 351              	.LFB118:
+ 317:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 318:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 319:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Enables or disables the DCMI Capture.
+ 320:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  NewState: new state of the DCMI capture. 
+ 321:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be: ENABLE or DISABLE.
+ 322:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 323:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 324:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_CaptureCmd(FunctionalState NewState)
+ 325:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 352              		.loc 1 325 0
+ 353              		.cfi_startproc
+ 354              		@ args = 0, pretend = 0, frame = 0
+ 355              		@ frame_needed = 0, uses_anonymous_args = 0
+ 356              		@ link register save eliminated.
+ 357              	.LVL12:
+ 358 00e0 044B     		ldr	r3, .L36
+ 326:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 327:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));
+ 328:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     
+ 329:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (NewState != DISABLE)
+ 330:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 331:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Enable the DCMI Capture */
+ 332:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR |= (uint32_t)DCMI_CR_CAPTURE;
+ 359              		.loc 1 332 0
+ 360 00e2 1A68     		ldr	r2, [r3]
+ 329:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 361              		.loc 1 329 0
+ 362 00e4 18B1     		cbz	r0, .L33
+ 363              		.loc 1 332 0
+ 364 00e6 42F00102 		orr	r2, r2, #1
+ 365              	.L35:
+ 333:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 334:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 335:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 336:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Disable the DCMI Capture */
+ 337:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->CR &= ~(uint32_t)DCMI_CR_CAPTURE;
+ 366              		.loc 1 337 0
+ 367 00ea 1A60     		str	r2, [r3]
+ 338:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 339:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 368              		.loc 1 339 0
+ 369 00ec 7047     		bx	lr
+ 370              	.L33:
+ 337:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 371              		.loc 1 337 0
+ 372 00ee 22F00102 		bic	r2, r2, #1
+ 373 00f2 FAE7     		b	.L35
+ 374              	.L37:
+ 375              		.align	2
+ 376              	.L36:
+ 377 00f4 00000550 		.word	1342504960
+ 378              		.cfi_endproc
+ 379              	.LFE118:
+ 381              		.align	1
+ 382              		.global	DCMI_ReadData
+ 383              		.syntax unified
+ 384              		.thumb
+ 385              		.thumb_func
+ 386              		.fpu fpv4-sp-d16
+ 388              	DCMI_ReadData:
+ 389              	.LFB119:
+ 340:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 341:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 342:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Reads the data stored in the DR register.
+ 343:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  None 
+ 344:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval Data register value
+ 345:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 346:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** uint32_t DCMI_ReadData(void)
+ 347:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 390              		.loc 1 347 0
+ 391              		.cfi_startproc
+ 392              		@ args = 0, pretend = 0, frame = 0
+ 393              		@ frame_needed = 0, uses_anonymous_args = 0
+ 394              		@ link register save eliminated.
+ 348:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   return DCMI->DR;
+ 395              		.loc 1 348 0
+ 396 00f8 014B     		ldr	r3, .L39
+ 397 00fa 986A     		ldr	r0, [r3, #40]
+ 349:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 398              		.loc 1 349 0
+ 399 00fc 7047     		bx	lr
+ 400              	.L40:
+ 401 00fe 00BF     		.align	2
+ 402              	.L39:
+ 403 0100 00000550 		.word	1342504960
+ 404              		.cfi_endproc
+ 405              	.LFE119:
+ 407              		.align	1
+ 408              		.global	DCMI_ITConfig
+ 409              		.syntax unified
+ 410              		.thumb
+ 411              		.thumb_func
+ 412              		.fpu fpv4-sp-d16
+ 414              	DCMI_ITConfig:
+ 415              	.LFB120:
+ 350:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 351:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @}
+ 352:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 353:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 354:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /** @defgroup DCMI_Group3 Interrupts and flags management functions
+ 355:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *  @brief   Interrupts and flags management functions
+ 356:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  *
+ 357:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @verbatim   
+ 358:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================
+ 359:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****                   Interrupts and flags management functions
+ 360:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****  ===============================================================================  
+ 361:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 362:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** @endverbatim
+ 363:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @{
+ 364:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 365:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 366:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 367:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Enables or disables the DCMI interface interrupts.
+ 368:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_IT: specifies the DCMI interrupt sources to be enabled or disabled. 
+ 369:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be any combination of the following values:
+ 370:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_FRAME: Frame capture complete interrupt mask
+ 371:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_OVF: Overflow interrupt mask
+ 372:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_ERR: Synchronization error interrupt mask
+ 373:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_VSYNC: VSYNC interrupt mask
+ 374:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_LINE: Line interrupt mask
+ 375:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  NewState: new state of the specified DCMI interrupts.
+ 376:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be: ENABLE or DISABLE.
+ 377:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 378:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 379:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_ITConfig(uint16_t DCMI_IT, FunctionalState NewState)
+ 380:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 416              		.loc 1 380 0
+ 417              		.cfi_startproc
+ 418              		@ args = 0, pretend = 0, frame = 0
+ 419              		@ frame_needed = 0, uses_anonymous_args = 0
+ 420              		@ link register save eliminated.
+ 421              	.LVL13:
+ 422 0104 044B     		ldr	r3, .L45
+ 381:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 382:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_CONFIG_IT(DCMI_IT));
+ 383:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));
+ 384:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 385:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (NewState != DISABLE)
+ 386:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 387:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Enable the Interrupt sources */
+ 388:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->IER |= DCMI_IT;
+ 423              		.loc 1 388 0
+ 424 0106 DA68     		ldr	r2, [r3, #12]
+ 385:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 425              		.loc 1 385 0
+ 426 0108 11B1     		cbz	r1, .L42
+ 427              		.loc 1 388 0
+ 428 010a 1043     		orrs	r0, r0, r2
+ 429              	.LVL14:
+ 430              	.L44:
+ 389:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 390:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 391:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 392:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     /* Disable the Interrupt sources */
+ 393:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     DCMI->IER &= (uint16_t)(~DCMI_IT);
+ 431              		.loc 1 393 0
+ 432 010c D860     		str	r0, [r3, #12]
+ 394:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }  
+ 395:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 433              		.loc 1 395 0
+ 434 010e 7047     		bx	lr
+ 435              	.LVL15:
+ 436              	.L42:
+ 393:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }  
+ 437              		.loc 1 393 0
+ 438 0110 C043     		mvns	r0, r0
+ 439              	.LVL16:
+ 440 0112 80B2     		uxth	r0, r0
+ 441 0114 1040     		ands	r0, r0, r2
+ 442 0116 F9E7     		b	.L44
+ 443              	.L46:
+ 444              		.align	2
+ 445              	.L45:
+ 446 0118 00000550 		.word	1342504960
+ 447              		.cfi_endproc
+ 448              	.LFE120:
+ 450              		.align	1
+ 451              		.global	DCMI_GetFlagStatus
+ 452              		.syntax unified
+ 453              		.thumb
+ 454              		.thumb_func
+ 455              		.fpu fpv4-sp-d16
+ 457              	DCMI_GetFlagStatus:
+ 458              	.LFB121:
+ 396:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 397:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 398:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Checks whether the  DCMI interface flag is set or not.
+ 399:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_FLAG: specifies the flag to check.
+ 400:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be one of the following values:
+ 401:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_FRAMERI: Frame capture complete Raw flag mask
+ 402:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_OVFRI: Overflow Raw flag mask
+ 403:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_ERRRI: Synchronization error Raw flag mask
+ 404:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_VSYNCRI: VSYNC Raw flag mask
+ 405:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_LINERI: Line Raw flag mask
+ 406:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_FRAMEMI: Frame capture complete Masked flag mask
+ 407:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_OVFMI: Overflow Masked flag mask
+ 408:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_ERRMI: Synchronization error Masked flag mask
+ 409:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_VSYNCMI: VSYNC Masked flag mask
+ 410:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_LINEMI: Line Masked flag mask
+ 411:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_HSYNC: HSYNC flag mask
+ 412:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_VSYNC: VSYNC flag mask
+ 413:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_FNE: Fifo not empty flag mask
+ 414:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval The new state of DCMI_FLAG (SET or RESET).
+ 415:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 416:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** FlagStatus DCMI_GetFlagStatus(uint16_t DCMI_FLAG)
+ 417:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 459              		.loc 1 417 0
+ 460              		.cfi_startproc
+ 461              		@ args = 0, pretend = 0, frame = 0
+ 462              		@ frame_needed = 0, uses_anonymous_args = 0
+ 463              		@ link register save eliminated.
+ 464              	.LVL17:
+ 418:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   FlagStatus bitstatus = RESET;
+ 419:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   uint32_t dcmireg, tempreg = 0;
+ 420:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 421:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 422:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_GET_FLAG(DCMI_FLAG));
+ 423:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 424:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Get the DCMI register index */
+ 425:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   dcmireg = (((uint16_t)DCMI_FLAG) >> 12);
+ 426:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 427:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if (dcmireg == 0x00) /* The FLAG is in RISR register */
+ 465              		.loc 1 427 0
+ 466 011c 020B     		lsrs	r2, r0, #12
+ 467              	.LVL18:
+ 468 011e 064B     		ldr	r3, .L51
+ 469 0120 05D1     		bne	.L48
+ 428:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 429:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     tempreg= DCMI->RISR;
+ 470              		.loc 1 429 0
+ 471 0122 9B68     		ldr	r3, [r3, #8]
+ 472              	.LVL19:
+ 473              	.L49:
+ 430:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 431:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else if (dcmireg == 0x02) /* The FLAG is in SR register */
+ 432:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 433:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     tempreg = DCMI->SR;
+ 434:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 435:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else /* The FLAG is in MISR register */
+ 436:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 437:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     tempreg = DCMI->MISR;
+ 438:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 439:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 440:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if ((tempreg & DCMI_FLAG) != (uint16_t)RESET )
+ 474              		.loc 1 440 0
+ 475 0124 1842     		tst	r0, r3
+ 441:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 442:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     bitstatus = SET;
+ 443:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 444:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 445:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 446:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     bitstatus = RESET;
+ 447:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 448:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Return the DCMI_FLAG status */
+ 449:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   return  bitstatus;
+ 450:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 476              		.loc 1 450 0
+ 477 0126 14BF     		ite	ne
+ 478 0128 0120     		movne	r0, #1
+ 479              	.LVL20:
+ 480 012a 0020     		moveq	r0, #0
+ 481 012c 7047     		bx	lr
+ 482              	.LVL21:
+ 483              	.L48:
+ 431:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 484              		.loc 1 431 0
+ 485 012e 022A     		cmp	r2, #2
+ 433:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 486              		.loc 1 433 0
+ 487 0130 0CBF     		ite	eq
+ 488 0132 5B68     		ldreq	r3, [r3, #4]
+ 489              	.LVL22:
+ 437:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 490              		.loc 1 437 0
+ 491 0134 1B69     		ldrne	r3, [r3, #16]
+ 492              	.LVL23:
+ 493 0136 F5E7     		b	.L49
+ 494              	.L52:
+ 495              		.align	2
+ 496              	.L51:
+ 497 0138 00000550 		.word	1342504960
+ 498              		.cfi_endproc
+ 499              	.LFE121:
+ 501              		.align	1
+ 502              		.global	DCMI_ClearFlag
+ 503              		.syntax unified
+ 504              		.thumb
+ 505              		.thumb_func
+ 506              		.fpu fpv4-sp-d16
+ 508              	DCMI_ClearFlag:
+ 509              	.LFB122:
+ 451:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 452:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 453:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Clears the DCMI's pending flags.
+ 454:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_FLAG: specifies the flag to clear.
+ 455:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be any combination of the following values:
+ 456:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_FRAMERI: Frame capture complete Raw flag mask
+ 457:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_OVFRI: Overflow Raw flag mask
+ 458:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_ERRRI: Synchronization error Raw flag mask
+ 459:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_VSYNCRI: VSYNC Raw flag mask
+ 460:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_FLAG_LINERI: Line Raw flag mask
+ 461:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval None
+ 462:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 463:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** void DCMI_ClearFlag(uint16_t DCMI_FLAG)
+ 464:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 510              		.loc 1 464 0
+ 511              		.cfi_startproc
+ 512              		@ args = 0, pretend = 0, frame = 0
+ 513              		@ frame_needed = 0, uses_anonymous_args = 0
+ 514              		@ link register save eliminated.
+ 515              	.LVL24:
+ 465:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 466:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_CLEAR_FLAG(DCMI_FLAG));
+ 467:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 468:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Clear the flag by writing in the ICR register 1 in the corresponding 
+ 469:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   Flag position*/
+ 470:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 471:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   DCMI->ICR = DCMI_FLAG;
+ 516              		.loc 1 471 0
+ 517 013c 014B     		ldr	r3, .L54
+ 518 013e 5861     		str	r0, [r3, #20]
+ 472:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 519              		.loc 1 472 0
+ 520 0140 7047     		bx	lr
+ 521              	.L55:
+ 522 0142 00BF     		.align	2
+ 523              	.L54:
+ 524 0144 00000550 		.word	1342504960
+ 525              		.cfi_endproc
+ 526              	.LFE122:
+ 528              		.align	1
+ 529              		.global	DCMI_GetITStatus
+ 530              		.syntax unified
+ 531              		.thumb
+ 532              		.thumb_func
+ 533              		.fpu fpv4-sp-d16
+ 535              	DCMI_GetITStatus:
+ 536              	.LFB123:
+ 473:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** 
+ 474:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** /**
+ 475:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @brief  Checks whether the DCMI interrupt has occurred or not.
+ 476:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @param  DCMI_IT: specifies the DCMI interrupt source to check.
+ 477:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *          This parameter can be one of the following values:
+ 478:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_FRAME: Frame capture complete interrupt mask
+ 479:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_OVF: Overflow interrupt mask
+ 480:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_ERR: Synchronization error interrupt mask
+ 481:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_VSYNC: VSYNC interrupt mask
+ 482:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   *            @arg DCMI_IT_LINE: Line interrupt mask
+ 483:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   * @retval The new state of DCMI_IT (SET or RESET).
+ 484:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   */
+ 485:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** ITStatus DCMI_GetITStatus(uint16_t DCMI_IT)
+ 486:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** {
+ 537              		.loc 1 486 0
+ 538              		.cfi_startproc
+ 539              		@ args = 0, pretend = 0, frame = 0
+ 540              		@ frame_needed = 0, uses_anonymous_args = 0
+ 541              		@ link register save eliminated.
+ 542              	.LVL25:
+ 487:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   ITStatus bitstatus = RESET;
+ 488:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   uint32_t itstatus = 0;
+ 489:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 490:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   /* Check the parameters */
+ 491:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   assert_param(IS_DCMI_GET_IT(DCMI_IT));
+ 492:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 493:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   itstatus = DCMI->MISR & DCMI_IT; /* Only masked interrupts are checked */
+ 543              		.loc 1 493 0
+ 544 0148 034B     		ldr	r3, .L57
+ 545 014a 1B69     		ldr	r3, [r3, #16]
+ 546              	.LVL26:
+ 494:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   
+ 495:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   if ((itstatus != (uint16_t)RESET))
+ 547              		.loc 1 495 0
+ 548 014c 1842     		tst	r0, r3
+ 496:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 497:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     bitstatus = SET;
+ 498:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 499:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   else
+ 500:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   {
+ 501:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****     bitstatus = RESET;
+ 502:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   }
+ 503:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c ****   return bitstatus;
+ 504:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dcmi.c **** }
+ 549              		.loc 1 504 0
+ 550 014e 14BF     		ite	ne
+ 551 0150 0120     		movne	r0, #1
+ 552              	.LVL27:
+ 553 0152 0020     		moveq	r0, #0
+ 554 0154 7047     		bx	lr
+ 555              	.L58:
+ 556 0156 00BF     		.align	2
+ 557              	.L57:
+ 558 0158 00000550 		.word	1342504960
+ 559              		.cfi_endproc
+ 560              	.LFE123:
+ 562              		.align	1
+ 563              		.global	DCMI_ClearITPendingBit
+ 564              		.syntax unified
+ 565              		.thumb
+ 566              		.thumb_func
+ 567              		.fpu fpv4-sp-d16
+ 569              	DCMI_ClearITPendingBit:
+ 570              	.LFB126:
+ 571              		.cfi_startproc
+ 572              		@ args = 0, pretend = 0, frame = 0
+ 573              		@ frame_needed = 0, uses_anonymous_args = 0
+ 574              		@ link register save eliminated.
+ 575 015c 014B     		ldr	r3, .L60
+ 576 015e 5861     		str	r0, [r3, #20]
+ 577 0160 7047     		bx	lr
+ 578              	.L61:
+ 579 0162 00BF     		.align	2
+ 580              	.L60:
+ 581 0164 00000550 		.word	1342504960
+ 582              		.cfi_endproc
+ 583              	.LFE126:
+ 585              	.Letext0:
+ 586              		.file 2 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 587              		.file 3 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 588              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 589              		.file 5 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 590              		.file 6 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 591              		.file 7 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/st
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 stm32f4xx_dcmi.c
+     /tmp/ccI5vkIB.s:16     .text:0000000000000000 $t
+     /tmp/ccI5vkIB.s:23     .text:0000000000000000 DCMI_DeInit
+     /tmp/ccI5vkIB.s:55     .text:0000000000000018 $d
+     /tmp/ccI5vkIB.s:59     .text:000000000000001c $t
+     /tmp/ccI5vkIB.s:66     .text:000000000000001c DCMI_Init
+     /tmp/ccI5vkIB.s:124    .text:0000000000000058 $d
+     /tmp/ccI5vkIB.s:128    .text:000000000000005c $t
+     /tmp/ccI5vkIB.s:135    .text:000000000000005c DCMI_StructInit
+     /tmp/ccI5vkIB.s:170    .text:000000000000006e DCMI_CROPConfig
+     /tmp/ccI5vkIB.s:197    .text:0000000000000088 $d
+     /tmp/ccI5vkIB.s:201    .text:000000000000008c $t
+     /tmp/ccI5vkIB.s:208    .text:000000000000008c DCMI_CROPCmd
+     /tmp/ccI5vkIB.s:235    .text:00000000000000a0 $d
+     /tmp/ccI5vkIB.s:239    .text:00000000000000a4 $t
+     /tmp/ccI5vkIB.s:246    .text:00000000000000a4 DCMI_SetEmbeddedSynchroCodes
+     /tmp/ccI5vkIB.s:263    .text:00000000000000ac $d
+     /tmp/ccI5vkIB.s:267    .text:00000000000000b0 $t
+     /tmp/ccI5vkIB.s:274    .text:00000000000000b0 DCMI_JPEGCmd
+     /tmp/ccI5vkIB.s:301    .text:00000000000000c4 $d
+     /tmp/ccI5vkIB.s:305    .text:00000000000000c8 $t
+     /tmp/ccI5vkIB.s:312    .text:00000000000000c8 DCMI_Cmd
+     /tmp/ccI5vkIB.s:339    .text:00000000000000dc $d
+     /tmp/ccI5vkIB.s:343    .text:00000000000000e0 $t
+     /tmp/ccI5vkIB.s:350    .text:00000000000000e0 DCMI_CaptureCmd
+     /tmp/ccI5vkIB.s:377    .text:00000000000000f4 $d
+     /tmp/ccI5vkIB.s:381    .text:00000000000000f8 $t
+     /tmp/ccI5vkIB.s:388    .text:00000000000000f8 DCMI_ReadData
+     /tmp/ccI5vkIB.s:403    .text:0000000000000100 $d
+     /tmp/ccI5vkIB.s:407    .text:0000000000000104 $t
+     /tmp/ccI5vkIB.s:414    .text:0000000000000104 DCMI_ITConfig
+     /tmp/ccI5vkIB.s:446    .text:0000000000000118 $d
+     /tmp/ccI5vkIB.s:450    .text:000000000000011c $t
+     /tmp/ccI5vkIB.s:457    .text:000000000000011c DCMI_GetFlagStatus
+     /tmp/ccI5vkIB.s:497    .text:0000000000000138 $d
+     /tmp/ccI5vkIB.s:501    .text:000000000000013c $t
+     /tmp/ccI5vkIB.s:508    .text:000000000000013c DCMI_ClearFlag
+     /tmp/ccI5vkIB.s:524    .text:0000000000000144 $d
+     /tmp/ccI5vkIB.s:528    .text:0000000000000148 $t
+     /tmp/ccI5vkIB.s:535    .text:0000000000000148 DCMI_GetITStatus
+     /tmp/ccI5vkIB.s:558    .text:0000000000000158 $d
+     /tmp/ccI5vkIB.s:562    .text:000000000000015c $t
+     /tmp/ccI5vkIB.s:569    .text:000000000000015c DCMI_ClearITPendingBit
+     /tmp/ccI5vkIB.s:581    .text:0000000000000164 $d
+
+NO UNDEFINED SYMBOLS

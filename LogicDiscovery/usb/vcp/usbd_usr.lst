@@ -1,0 +1,288 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"usbd_usr.c"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.global	USBD_USR_Init
+  18              		.syntax unified
+  19              		.thumb
+  20              		.thumb_func
+  21              		.fpu fpv4-sp-d16
+  23              	USBD_USR_Init:
+  24              	.LFB110:
+  25              		.file 1 "./usb/vcp/usbd_usr.c"
+   1:./usb/vcp/usbd_usr.c **** /**
+   2:./usb/vcp/usbd_usr.c ****   ******************************************************************************
+   3:./usb/vcp/usbd_usr.c ****   * @file    usbd_usr.c
+   4:./usb/vcp/usbd_usr.c ****   * @author  MCD Application Team
+   5:./usb/vcp/usbd_usr.c ****   * @version V1.1.0
+   6:./usb/vcp/usbd_usr.c ****   * @date    19-March-2012
+   7:./usb/vcp/usbd_usr.c ****   * @brief   This file includes the user application layer
+   8:./usb/vcp/usbd_usr.c ****   ******************************************************************************
+   9:./usb/vcp/usbd_usr.c ****   * @attention
+  10:./usb/vcp/usbd_usr.c ****   *
+  11:./usb/vcp/usbd_usr.c ****   * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  12:./usb/vcp/usbd_usr.c ****   *
+  13:./usb/vcp/usbd_usr.c ****   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  14:./usb/vcp/usbd_usr.c ****   * You may not use this file except in compliance with the License.
+  15:./usb/vcp/usbd_usr.c ****   * You may obtain a copy of the License at:
+  16:./usb/vcp/usbd_usr.c ****   *
+  17:./usb/vcp/usbd_usr.c ****   *        http://www.st.com/software_license_agreement_liberty_v2
+  18:./usb/vcp/usbd_usr.c ****   *
+  19:./usb/vcp/usbd_usr.c ****   * Unless required by applicable law or agreed to in writing, software 
+  20:./usb/vcp/usbd_usr.c ****   * distributed under the License is distributed on an "AS IS" BASIS, 
+  21:./usb/vcp/usbd_usr.c ****   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  22:./usb/vcp/usbd_usr.c ****   * See the License for the specific language governing permissions and
+  23:./usb/vcp/usbd_usr.c ****   * limitations under the License.
+  24:./usb/vcp/usbd_usr.c ****   *
+  25:./usb/vcp/usbd_usr.c ****   ******************************************************************************
+  26:./usb/vcp/usbd_usr.c ****   */ 
+  27:./usb/vcp/usbd_usr.c **** 
+  28:./usb/vcp/usbd_usr.c **** /* Includes ------------------------------------------------------------------*/
+  29:./usb/vcp/usbd_usr.c **** #include "usbd_usr.h"
+  30:./usb/vcp/usbd_usr.c **** #include "usbd_ioreq.h"
+  31:./usb/vcp/usbd_usr.c **** //#include "lcd_log.h"
+  32:./usb/vcp/usbd_usr.c **** 
+  33:./usb/vcp/usbd_usr.c **** /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
+  34:./usb/vcp/usbd_usr.c **** * @{
+  35:./usb/vcp/usbd_usr.c **** */
+  36:./usb/vcp/usbd_usr.c **** 
+  37:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR 
+  38:./usb/vcp/usbd_usr.c **** * @brief    This file includes the user application layer
+  39:./usb/vcp/usbd_usr.c **** * @{
+  40:./usb/vcp/usbd_usr.c **** */ 
+  41:./usb/vcp/usbd_usr.c **** 
+  42:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_TypesDefinitions
+  43:./usb/vcp/usbd_usr.c **** * @{
+  44:./usb/vcp/usbd_usr.c **** */ 
+  45:./usb/vcp/usbd_usr.c **** /**
+  46:./usb/vcp/usbd_usr.c **** * @}
+  47:./usb/vcp/usbd_usr.c **** */ 
+  48:./usb/vcp/usbd_usr.c **** 
+  49:./usb/vcp/usbd_usr.c **** 
+  50:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_Defines
+  51:./usb/vcp/usbd_usr.c **** * @{
+  52:./usb/vcp/usbd_usr.c **** */ 
+  53:./usb/vcp/usbd_usr.c **** /**
+  54:./usb/vcp/usbd_usr.c **** * @}
+  55:./usb/vcp/usbd_usr.c **** */ 
+  56:./usb/vcp/usbd_usr.c **** 
+  57:./usb/vcp/usbd_usr.c **** 
+  58:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_Macros
+  59:./usb/vcp/usbd_usr.c **** * @{
+  60:./usb/vcp/usbd_usr.c **** */ 
+  61:./usb/vcp/usbd_usr.c **** /**
+  62:./usb/vcp/usbd_usr.c **** * @}
+  63:./usb/vcp/usbd_usr.c **** */ 
+  64:./usb/vcp/usbd_usr.c **** 
+  65:./usb/vcp/usbd_usr.c **** 
+  66:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_Variables
+  67:./usb/vcp/usbd_usr.c **** * @{
+  68:./usb/vcp/usbd_usr.c **** */ 
+  69:./usb/vcp/usbd_usr.c **** 
+  70:./usb/vcp/usbd_usr.c **** USBD_Usr_cb_TypeDef USR_cb =
+  71:./usb/vcp/usbd_usr.c **** {
+  72:./usb/vcp/usbd_usr.c ****   USBD_USR_Init,
+  73:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceReset,
+  74:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceConfigured,
+  75:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceSuspended,
+  76:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceResumed,
+  77:./usb/vcp/usbd_usr.c ****   
+  78:./usb/vcp/usbd_usr.c ****   
+  79:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceConnected,
+  80:./usb/vcp/usbd_usr.c ****   USBD_USR_DeviceDisconnected,    
+  81:./usb/vcp/usbd_usr.c **** };
+  82:./usb/vcp/usbd_usr.c **** 
+  83:./usb/vcp/usbd_usr.c **** /**
+  84:./usb/vcp/usbd_usr.c **** * @}
+  85:./usb/vcp/usbd_usr.c **** */
+  86:./usb/vcp/usbd_usr.c **** 
+  87:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_Constants
+  88:./usb/vcp/usbd_usr.c **** * @{
+  89:./usb/vcp/usbd_usr.c **** */ 
+  90:./usb/vcp/usbd_usr.c **** 
+  91:./usb/vcp/usbd_usr.c **** /**
+  92:./usb/vcp/usbd_usr.c **** * @}
+  93:./usb/vcp/usbd_usr.c **** */
+  94:./usb/vcp/usbd_usr.c **** 
+  95:./usb/vcp/usbd_usr.c **** 
+  96:./usb/vcp/usbd_usr.c **** 
+  97:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_FunctionPrototypes
+  98:./usb/vcp/usbd_usr.c **** * @{
+  99:./usb/vcp/usbd_usr.c **** */ 
+ 100:./usb/vcp/usbd_usr.c **** /**
+ 101:./usb/vcp/usbd_usr.c **** * @}
+ 102:./usb/vcp/usbd_usr.c **** */ 
+ 103:./usb/vcp/usbd_usr.c **** 
+ 104:./usb/vcp/usbd_usr.c **** 
+ 105:./usb/vcp/usbd_usr.c **** /** @defgroup USBD_USR_Private_Functions
+ 106:./usb/vcp/usbd_usr.c **** * @{
+ 107:./usb/vcp/usbd_usr.c **** */ 
+ 108:./usb/vcp/usbd_usr.c **** 
+ 109:./usb/vcp/usbd_usr.c **** /**
+ 110:./usb/vcp/usbd_usr.c **** * @brief  USBD_USR_Init 
+ 111:./usb/vcp/usbd_usr.c **** *         Displays the message on LCD for host lib initialization
+ 112:./usb/vcp/usbd_usr.c **** * @param  None
+ 113:./usb/vcp/usbd_usr.c **** * @retval None
+ 114:./usb/vcp/usbd_usr.c **** */
+ 115:./usb/vcp/usbd_usr.c **** void USBD_USR_Init(void)
+ 116:./usb/vcp/usbd_usr.c **** {    
+  26              		.loc 1 116 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              		@ link register save eliminated.
+ 117:./usb/vcp/usbd_usr.c **** 
+ 118:./usb/vcp/usbd_usr.c **** }
+  31              		.loc 1 118 0
+  32 0000 7047     		bx	lr
+  33              		.cfi_endproc
+  34              	.LFE110:
+  36              		.align	1
+  37              		.global	USBD_USR_DeviceReset
+  38              		.syntax unified
+  39              		.thumb
+  40              		.thumb_func
+  41              		.fpu fpv4-sp-d16
+  43              	USBD_USR_DeviceReset:
+  44              	.LFB111:
+ 119:./usb/vcp/usbd_usr.c **** 
+ 120:./usb/vcp/usbd_usr.c **** /**
+ 121:./usb/vcp/usbd_usr.c **** * @brief  USBD_USR_DeviceReset 
+ 122:./usb/vcp/usbd_usr.c **** *         Displays the message on LCD on device Reset Event
+ 123:./usb/vcp/usbd_usr.c **** * @param  speed : device speed
+ 124:./usb/vcp/usbd_usr.c **** * @retval None
+ 125:./usb/vcp/usbd_usr.c **** */
+ 126:./usb/vcp/usbd_usr.c **** void USBD_USR_DeviceReset(uint8_t speed )
+ 127:./usb/vcp/usbd_usr.c **** {
+  45              		.loc 1 127 0
+  46              		.cfi_startproc
+  47              		@ args = 0, pretend = 0, frame = 0
+  48              		@ frame_needed = 0, uses_anonymous_args = 0
+  49              		@ link register save eliminated.
+  50              	.LVL0:
+ 128:./usb/vcp/usbd_usr.c **** 
+ 129:./usb/vcp/usbd_usr.c **** }
+  51              		.loc 1 129 0
+  52 0002 7047     		bx	lr
+  53              		.cfi_endproc
+  54              	.LFE111:
+  56              		.align	1
+  57              		.global	USBD_USR_DeviceDisconnected
+  58              		.syntax unified
+  59              		.thumb
+  60              		.thumb_func
+  61              		.fpu fpv4-sp-d16
+  63              	USBD_USR_DeviceDisconnected:
+  64              	.LFB126:
+  65              		.cfi_startproc
+  66              		@ args = 0, pretend = 0, frame = 0
+  67              		@ frame_needed = 0, uses_anonymous_args = 0
+  68              		@ link register save eliminated.
+  69 0004 7047     		bx	lr
+  70              		.cfi_endproc
+  71              	.LFE126:
+  73              		.align	1
+  74              		.global	USBD_USR_DeviceConfigured
+  75              		.syntax unified
+  76              		.thumb
+  77              		.thumb_func
+  78              		.fpu fpv4-sp-d16
+  80              	USBD_USR_DeviceConfigured:
+  81              	.LFB118:
+  82              		.cfi_startproc
+  83              		@ args = 0, pretend = 0, frame = 0
+  84              		@ frame_needed = 0, uses_anonymous_args = 0
+  85              		@ link register save eliminated.
+  86 0006 7047     		bx	lr
+  87              		.cfi_endproc
+  88              	.LFE118:
+  90              		.align	1
+  91              		.global	USBD_USR_DeviceSuspended
+  92              		.syntax unified
+  93              		.thumb
+  94              		.thumb_func
+  95              		.fpu fpv4-sp-d16
+  97              	USBD_USR_DeviceSuspended:
+  98              	.LFB120:
+  99              		.cfi_startproc
+ 100              		@ args = 0, pretend = 0, frame = 0
+ 101              		@ frame_needed = 0, uses_anonymous_args = 0
+ 102              		@ link register save eliminated.
+ 103 0008 7047     		bx	lr
+ 104              		.cfi_endproc
+ 105              	.LFE120:
+ 107              		.align	1
+ 108              		.global	USBD_USR_DeviceResumed
+ 109              		.syntax unified
+ 110              		.thumb
+ 111              		.thumb_func
+ 112              		.fpu fpv4-sp-d16
+ 114              	USBD_USR_DeviceResumed:
+ 115              	.LFB122:
+ 116              		.cfi_startproc
+ 117              		@ args = 0, pretend = 0, frame = 0
+ 118              		@ frame_needed = 0, uses_anonymous_args = 0
+ 119              		@ link register save eliminated.
+ 120 000a 7047     		bx	lr
+ 121              		.cfi_endproc
+ 122              	.LFE122:
+ 124              		.align	1
+ 125              		.global	USBD_USR_DeviceConnected
+ 126              		.syntax unified
+ 127              		.thumb
+ 128              		.thumb_func
+ 129              		.fpu fpv4-sp-d16
+ 131              	USBD_USR_DeviceConnected:
+ 132              	.LFB124:
+ 133              		.cfi_startproc
+ 134              		@ args = 0, pretend = 0, frame = 0
+ 135              		@ frame_needed = 0, uses_anonymous_args = 0
+ 136              		@ link register save eliminated.
+ 137 000c 7047     		bx	lr
+ 138              		.cfi_endproc
+ 139              	.LFE124:
+ 141              		.global	USR_cb
+ 142              		.data
+ 143              		.align	2
+ 146              	USR_cb:
+ 147 0000 00000000 		.word	USBD_USR_Init
+ 148 0004 00000000 		.word	USBD_USR_DeviceReset
+ 149 0008 00000000 		.word	USBD_USR_DeviceConfigured
+ 150 000c 00000000 		.word	USBD_USR_DeviceSuspended
+ 151 0010 00000000 		.word	USBD_USR_DeviceResumed
+ 152 0014 00000000 		.word	USBD_USR_DeviceConnected
+ 153 0018 00000000 		.word	USBD_USR_DeviceDisconnected
+ 154              		.text
+ 155              	.Letext0:
+ 156              		.file 2 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 157              		.file 3 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 158              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 159              		.file 5 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 160              		.file 6 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_OTG_Driver/inc/usb_core.h
+ 161              		.file 7 "../STLibs//STM32_USB-Host-Device_Lib_V2.1.0/Libraries/STM32_USB_Device_Library/Core/inc/u
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 usbd_usr.c
+     /tmp/ccjxn2nh.s:16     .text:0000000000000000 $t
+     /tmp/ccjxn2nh.s:23     .text:0000000000000000 USBD_USR_Init
+     /tmp/ccjxn2nh.s:43     .text:0000000000000002 USBD_USR_DeviceReset
+     /tmp/ccjxn2nh.s:63     .text:0000000000000004 USBD_USR_DeviceDisconnected
+     /tmp/ccjxn2nh.s:80     .text:0000000000000006 USBD_USR_DeviceConfigured
+     /tmp/ccjxn2nh.s:97     .text:0000000000000008 USBD_USR_DeviceSuspended
+     /tmp/ccjxn2nh.s:114    .text:000000000000000a USBD_USR_DeviceResumed
+     /tmp/ccjxn2nh.s:131    .text:000000000000000c USBD_USR_DeviceConnected
+     /tmp/ccjxn2nh.s:146    .data:0000000000000000 USR_cb
+     /tmp/ccjxn2nh.s:143    .data:0000000000000000 $d
+
+NO UNDEFINED SYMBOLS

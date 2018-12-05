@@ -1,0 +1,503 @@
+   1              		.cpu cortex-m4
+   2              		.eabi_attribute 27, 1
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 4
+  10              		.eabi_attribute 34, 1
+  11              		.eabi_attribute 18, 4
+  12              		.file	"misc.c"
+  13              		.text
+  14              	.Ltext0:
+  15              		.cfi_sections	.debug_frame
+  16              		.align	1
+  17              		.global	NVIC_PriorityGroupConfig
+  18              		.syntax unified
+  19              		.thumb
+  20              		.thumb_func
+  21              		.fpu fpv4-sp-d16
+  23              	NVIC_PriorityGroupConfig:
+  24              	.LFB110:
+  25              		.file 1 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/mi
+   1:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+   2:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   ******************************************************************************
+   3:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @file    misc.c
+   4:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @author  MCD Application Team
+   5:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @version V1.8.0
+   6:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @date    04-November-2016
+   7:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief   This file provides all the miscellaneous firmware functions (add-on
+   8:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *          to CMSIS functions).
+   9:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *          
+  10:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *  @verbatim   
+  11:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                               
+  12:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *          ===================================================================      
+  13:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                        How to configure Interrupts using driver 
+  14:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *          ===================================================================      
+  15:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * 
+  16:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *            This section provide functions allowing to configure the NVIC interrupts (IRQ).
+  17:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *            The Cortex-M4 exceptions are managed by CMSIS functions.
+  18:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  19:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *            1. Configure the NVIC Priority Grouping using NVIC_PriorityGroupConfig()
+  20:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                function according to the following table.
+  21:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****  
+  22:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *  The table below gives the allowed values of the pre-emption priority and subpriority according
+  23:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *  to the Priority Grouping configuration performed by NVIC_PriorityGroupConfig function
+  24:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    ============================================================================================
+  25:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *      NVIC_PriorityGroup   | NVIC_IRQChannelPreemptionPriority | NVIC_IRQChannelSubPriority  |  
+  26:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    ============================================================================================
+  27:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     NVIC_PriorityGroup_0  |                0                  |            0-15             | 0
+  28:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                           |                                   |                             | 4
+  29:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    --------------------------------------------------------------------------------------------
+  30:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     NVIC_PriorityGroup_1  |                0-1                |            0-7              | 1
+  31:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                           |                                   |                             | 3
+  32:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    --------------------------------------------------------------------------------------------
+  33:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     NVIC_PriorityGroup_2  |                0-3                |            0-3              | 2
+  34:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                           |                                   |                             | 2
+  35:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    --------------------------------------------------------------------------------------------
+  36:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     NVIC_PriorityGroup_3  |                0-7                |            0-1              | 3
+  37:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                           |                                   |                             | 1
+  38:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    --------------------------------------------------------------------------------------------
+  39:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     NVIC_PriorityGroup_4  |                0-15               |            0                | 4
+  40:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                           |                                   |                             | 0
+  41:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *    ============================================================================================
+  42:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  43:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *            2. Enable and Configure the priority of the selected IRQ Channels using NVIC_Init() 
+  44:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  45:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @note  When the NVIC_PriorityGroup_0 is selected, IRQ pre-emption is no more possible. 
+  46:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *        The pending IRQ priority will be managed only by the subpriority.
+  47:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  48:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @note  IRQ priority order (sorted by highest to lowest priority):
+  49:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         - Lowest pre-emption priority
+  50:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         - Lowest subpriority
+  51:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         - Lowest hardware priority (IRQ number)
+  52:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  53:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *  @endverbatim
+  54:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  55:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   ******************************************************************************
+  56:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @attention
+  57:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  58:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * <h2><center>&copy; COPYRIGHT 2016 STMicroelectronics</center></h2>
+  59:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  60:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  61:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * You may not use this file except in compliance with the License.
+  62:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * You may obtain a copy of the License at:
+  63:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  64:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *        http://www.st.com/software_license_agreement_liberty_v2
+  65:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  66:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * Unless required by applicable law or agreed to in writing, software 
+  67:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * distributed under the License is distributed on an "AS IS" BASIS, 
+  68:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  69:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * See the License for the specific language governing permissions and
+  70:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * limitations under the License.
+  71:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *
+  72:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   ******************************************************************************
+  73:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+  74:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  75:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Includes ------------------------------------------------------------------*/
+  76:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** #include "misc.h"
+  77:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  78:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /** @addtogroup STM32F4xx_StdPeriph_Driver
+  79:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @{
+  80:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+  81:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  82:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /** @defgroup MISC 
+  83:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief MISC driver modules
+  84:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @{
+  85:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+  86:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  87:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private typedef -----------------------------------------------------------*/
+  88:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private define ------------------------------------------------------------*/
+  89:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** #define AIRCR_VECTKEY_MASK    ((uint32_t)0x05FA0000)
+  90:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  91:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private macro -------------------------------------------------------------*/
+  92:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private variables ---------------------------------------------------------*/
+  93:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private function prototypes -----------------------------------------------*/
+  94:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /* Private functions ---------------------------------------------------------*/
+  95:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  96:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /** @defgroup MISC_Private_Functions
+  97:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @{
+  98:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+  99:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 100:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+ 101:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief  Configures the priority grouping: pre-emption priority and subpriority.
+ 102:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  NVIC_PriorityGroup: specifies the priority grouping bits length. 
+ 103:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *   This parameter can be one of the following values:
+ 104:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_PriorityGroup_0: 0 bits for pre-emption priority
+ 105:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                                4 bits for subpriority
+ 106:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_PriorityGroup_1: 1 bits for pre-emption priority
+ 107:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                                3 bits for subpriority
+ 108:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_PriorityGroup_2: 2 bits for pre-emption priority
+ 109:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                                2 bits for subpriority
+ 110:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_PriorityGroup_3: 3 bits for pre-emption priority
+ 111:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                                1 bits for subpriority
+ 112:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_PriorityGroup_4: 4 bits for pre-emption priority
+ 113:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *                                0 bits for subpriority
+ 114:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @note   When the NVIC_PriorityGroup_0 is selected, IRQ pre-emption is no more possible. 
+ 115:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         The pending IRQ priority will be managed only by the subpriority. 
+ 116:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @retval None
+ 117:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+ 118:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup)
+ 119:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** {
+  26              		.loc 1 119 0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30              		@ link register save eliminated.
+  31              	.LVL0:
+ 120:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Check the parameters */
+ 121:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_PRIORITY_GROUP(NVIC_PriorityGroup));
+ 122:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   
+ 123:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Set the PRIGROUP[10:8] bits according to NVIC_PriorityGroup value */
+ 124:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   SCB->AIRCR = AIRCR_VECTKEY_MASK | NVIC_PriorityGroup;
+  32              		.loc 1 124 0
+  33 0000 40F0BF60 		orr	r0, r0, #100139008
+  34              	.LVL1:
+  35 0004 024B     		ldr	r3, .L2
+  36 0006 40F40030 		orr	r0, r0, #131072
+  37 000a D860     		str	r0, [r3, #12]
+ 125:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** }
+  38              		.loc 1 125 0
+  39 000c 7047     		bx	lr
+  40              	.L3:
+  41 000e 00BF     		.align	2
+  42              	.L2:
+  43 0010 00ED00E0 		.word	-536810240
+  44              		.cfi_endproc
+  45              	.LFE110:
+  47              		.align	1
+  48              		.global	NVIC_Init
+  49              		.syntax unified
+  50              		.thumb
+  51              		.thumb_func
+  52              		.fpu fpv4-sp-d16
+  54              	NVIC_Init:
+  55              	.LFB111:
+ 126:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 127:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+ 128:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief  Initializes the NVIC peripheral according to the specified
+ 129:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         parameters in the NVIC_InitStruct.
+ 130:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @note   To configure interrupts priority correctly, the NVIC_PriorityGroupConfig()
+ 131:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         function should be called before. 
+ 132:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  NVIC_InitStruct: pointer to a NVIC_InitTypeDef structure that contains
+ 133:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *         the configuration information for the specified NVIC peripheral.
+ 134:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @retval None
+ 135:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+ 136:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** void NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct)
+ 137:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** {
+  56              		.loc 1 137 0
+  57              		.cfi_startproc
+  58              		@ args = 0, pretend = 0, frame = 0
+  59              		@ frame_needed = 0, uses_anonymous_args = 0
+  60              	.LVL2:
+  61 0014 0178     		ldrb	r1, [r0]	@ zero_extendqisi2
+  62 0016 70B5     		push	{r4, r5, r6, lr}
+  63              	.LCFI0:
+  64              		.cfi_def_cfa_offset 16
+  65              		.cfi_offset 4, -16
+  66              		.cfi_offset 5, -12
+  67              		.cfi_offset 6, -8
+  68              		.cfi_offset 14, -4
+  69 0018 01F01F03 		and	r3, r1, #31
+  70 001c 0126     		movs	r6, #1
+  71 001e 9E40     		lsls	r6, r6, r3
+ 138:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   uint8_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
+ 139:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   
+ 140:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Check the parameters */
+ 141:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_FUNCTIONAL_STATE(NVIC_InitStruct->NVIC_IRQChannelCmd));
+ 142:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_PREEMPTION_PRIORITY(NVIC_InitStruct->NVIC_IRQChannelPreemptionPriority));  
+ 143:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_SUB_PRIORITY(NVIC_InitStruct->NVIC_IRQChannelSubPriority));
+ 144:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     
+ 145:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   if (NVIC_InitStruct->NVIC_IRQChannelCmd != DISABLE)
+  72              		.loc 1 145 0
+  73 0020 C378     		ldrb	r3, [r0, #3]	@ zero_extendqisi2
+  74 0022 4D09     		lsrs	r5, r1, #5
+  75 0024 CBB1     		cbz	r3, .L5
+ 146:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 147:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     /* Compute the Corresponding IRQ Priority --------------------------------*/    
+ 148:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
+  76              		.loc 1 148 0
+  77 0026 0F4B     		ldr	r3, .L7
+  78 0028 DA68     		ldr	r2, [r3, #12]
+ 149:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppre = (0x4 - tmppriority);
+ 150:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmpsub = tmpsub >> tmppriority;
+ 151:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 152:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppriority = NVIC_InitStruct->NVIC_IRQChannelPreemptionPriority << tmppre;
+  79              		.loc 1 152 0
+  80 002a 4378     		ldrb	r3, [r0, #1]	@ zero_extendqisi2
+ 148:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppre = (0x4 - tmppriority);
+  81              		.loc 1 148 0
+  82 002c D243     		mvns	r2, r2
+  83 002e C2F30222 		ubfx	r2, r2, #8, #3
+  84              	.LVL3:
+ 149:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppre = (0x4 - tmppriority);
+  85              		.loc 1 149 0
+  86 0032 C2F10404 		rsb	r4, r2, #4
+  87              		.loc 1 152 0
+  88 0036 E4B2     		uxtb	r4, r4
+  89 0038 A340     		lsls	r3, r3, r4
+  90 003a DCB2     		uxtb	r4, r3
+  91              	.LVL4:
+ 150:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+  92              		.loc 1 150 0
+  93 003c 0F23     		movs	r3, #15
+  94 003e 43FA02F2 		asr	r2, r3, r2
+  95              	.LVL5:
+ 153:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppriority |=  (uint8_t)(NVIC_InitStruct->NVIC_IRQChannelSubPriority & tmpsub);
+  96              		.loc 1 153 0
+  97 0042 8378     		ldrb	r3, [r0, #2]	@ zero_extendqisi2
+  98 0044 1340     		ands	r3, r3, r2
+ 154:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****         
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppriority = tmppriority << 0x04;
+ 156:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****         
+ 157:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     NVIC->IP[NVIC_InitStruct->NVIC_IRQChannel] = tmppriority;
+  99              		.loc 1 157 0
+ 100 0046 084A     		ldr	r2, .L7+4
+ 153:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     tmppriority |=  (uint8_t)(NVIC_InitStruct->NVIC_IRQChannelSubPriority & tmpsub);
+ 101              		.loc 1 153 0
+ 102 0048 2343     		orrs	r3, r3, r4
+ 103              	.LVL6:
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****         
+ 104              		.loc 1 155 0
+ 105 004a 1B01     		lsls	r3, r3, #4
+ 106              	.LVL7:
+ 107              		.loc 1 157 0
+ 108 004c 1144     		add	r1, r1, r2
+ 155:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****         
+ 109              		.loc 1 155 0
+ 110 004e DBB2     		uxtb	r3, r3
+ 111              	.LVL8:
+ 112              		.loc 1 157 0
+ 113 0050 81F80033 		strb	r3, [r1, #768]
+ 158:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     
+ 159:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     /* Enable the Selected IRQ Channels --------------------------------------*/
+ 160:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     NVIC->ISER[NVIC_InitStruct->NVIC_IRQChannel >> 0x05] =
+ 114              		.loc 1 160 0
+ 115 0054 42F82560 		str	r6, [r2, r5, lsl #2]
+ 116              	.LVL9:
+ 117              	.L4:
+ 161:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****       (uint32_t)0x01 << (NVIC_InitStruct->NVIC_IRQChannel & (uint8_t)0x1F);
+ 162:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 163:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   else
+ 164:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 165:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     /* Disable the Selected IRQ Channels -------------------------------------*/
+ 166:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     NVIC->ICER[NVIC_InitStruct->NVIC_IRQChannel >> 0x05] =
+ 167:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****       (uint32_t)0x01 << (NVIC_InitStruct->NVIC_IRQChannel & (uint8_t)0x1F);
+ 168:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 169:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** }
+ 118              		.loc 1 169 0
+ 119 0058 70BD     		pop	{r4, r5, r6, pc}
+ 120              	.LVL10:
+ 121              	.L5:
+ 166:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****       (uint32_t)0x01 << (NVIC_InitStruct->NVIC_IRQChannel & (uint8_t)0x1F);
+ 122              		.loc 1 166 0
+ 123 005a 2035     		adds	r5, r5, #32
+ 124 005c 024B     		ldr	r3, .L7+4
+ 125 005e 43F82560 		str	r6, [r3, r5, lsl #2]
+ 126              		.loc 1 169 0
+ 127 0062 F9E7     		b	.L4
+ 128              	.L8:
+ 129              		.align	2
+ 130              	.L7:
+ 131 0064 00ED00E0 		.word	-536810240
+ 132 0068 00E100E0 		.word	-536813312
+ 133              		.cfi_endproc
+ 134              	.LFE111:
+ 136              		.align	1
+ 137              		.global	NVIC_SetVectorTable
+ 138              		.syntax unified
+ 139              		.thumb
+ 140              		.thumb_func
+ 141              		.fpu fpv4-sp-d16
+ 143              	NVIC_SetVectorTable:
+ 144              	.LFB112:
+ 170:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 171:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+ 172:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief  Sets the vector table location and Offset.
+ 173:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  NVIC_VectTab: specifies if the vector table is in RAM or FLASH memory.
+ 174:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *   This parameter can be one of the following values:
+ 175:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_VectTab_RAM: Vector Table in internal SRAM.
+ 176:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_VectTab_FLASH: Vector Table in internal FLASH.
+ 177:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  Offset: Vector Table base offset field. This value must be a multiple of 0x200.
+ 178:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @retval None
+ 179:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+ 180:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset)
+ 181:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** { 
+ 145              		.loc 1 181 0
+ 146              		.cfi_startproc
+ 147              		@ args = 0, pretend = 0, frame = 0
+ 148              		@ frame_needed = 0, uses_anonymous_args = 0
+ 149              		@ link register save eliminated.
+ 150              	.LVL11:
+ 182:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Check the parameters */
+ 183:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_VECTTAB(NVIC_VectTab));
+ 184:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_OFFSET(Offset));  
+ 185:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****    
+ 186:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   SCB->VTOR = NVIC_VectTab | (Offset & (uint32_t)0x1FFFFF80);
+ 151              		.loc 1 186 0
+ 152 006c 21F06041 		bic	r1, r1, #-536870912
+ 153              	.LVL12:
+ 154 0070 21F07F01 		bic	r1, r1, #127
+ 155 0074 014B     		ldr	r3, .L10
+ 156 0076 0143     		orrs	r1, r1, r0
+ 157 0078 9960     		str	r1, [r3, #8]
+ 187:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** }
+ 158              		.loc 1 187 0
+ 159 007a 7047     		bx	lr
+ 160              	.L11:
+ 161              		.align	2
+ 162              	.L10:
+ 163 007c 00ED00E0 		.word	-536810240
+ 164              		.cfi_endproc
+ 165              	.LFE112:
+ 167              		.align	1
+ 168              		.global	NVIC_SystemLPConfig
+ 169              		.syntax unified
+ 170              		.thumb
+ 171              		.thumb_func
+ 172              		.fpu fpv4-sp-d16
+ 174              	NVIC_SystemLPConfig:
+ 175              	.LFB113:
+ 188:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 189:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+ 190:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief  Selects the condition for the system to enter low power mode.
+ 191:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  LowPowerMode: Specifies the new mode for the system to enter low power mode.
+ 192:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *   This parameter can be one of the following values:
+ 193:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_LP_SEVONPEND: Low Power SEV on Pend.
+ 194:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_LP_SLEEPDEEP: Low Power DEEPSLEEP request.
+ 195:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg NVIC_LP_SLEEPONEXIT: Low Power Sleep on Exit.
+ 196:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  NewState: new state of LP condition. This parameter can be: ENABLE or DISABLE.
+ 197:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @retval None
+ 198:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+ 199:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** void NVIC_SystemLPConfig(uint8_t LowPowerMode, FunctionalState NewState)
+ 200:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** {
+ 176              		.loc 1 200 0
+ 177              		.cfi_startproc
+ 178              		@ args = 0, pretend = 0, frame = 0
+ 179              		@ frame_needed = 0, uses_anonymous_args = 0
+ 180              		@ link register save eliminated.
+ 181              	.LVL13:
+ 182 0080 044B     		ldr	r3, .L16
+ 201:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Check the parameters */
+ 202:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_NVIC_LP(LowPowerMode));
+ 203:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_FUNCTIONAL_STATE(NewState));  
+ 204:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   
+ 205:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   if (NewState != DISABLE)
+ 206:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 207:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     SCB->SCR |= LowPowerMode;
+ 183              		.loc 1 207 0
+ 184 0082 1A69     		ldr	r2, [r3, #16]
+ 205:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 185              		.loc 1 205 0
+ 186 0084 11B1     		cbz	r1, .L13
+ 187              		.loc 1 207 0
+ 188 0086 1043     		orrs	r0, r0, r2
+ 189              	.LVL14:
+ 190              	.L15:
+ 208:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 209:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   else
+ 210:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 211:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     SCB->SCR &= (uint32_t)(~(uint32_t)LowPowerMode);
+ 191              		.loc 1 211 0
+ 192 0088 1861     		str	r0, [r3, #16]
+ 212:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 213:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** }
+ 193              		.loc 1 213 0
+ 194 008a 7047     		bx	lr
+ 195              	.LVL15:
+ 196              	.L13:
+ 211:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 197              		.loc 1 211 0
+ 198 008c 22EA0000 		bic	r0, r2, r0
+ 199              	.LVL16:
+ 200 0090 FAE7     		b	.L15
+ 201              	.L17:
+ 202 0092 00BF     		.align	2
+ 203              	.L16:
+ 204 0094 00ED00E0 		.word	-536810240
+ 205              		.cfi_endproc
+ 206              	.LFE113:
+ 208              		.align	1
+ 209              		.global	SysTick_CLKSourceConfig
+ 210              		.syntax unified
+ 211              		.thumb
+ 212              		.thumb_func
+ 213              		.fpu fpv4-sp-d16
+ 215              	SysTick_CLKSourceConfig:
+ 216              	.LFB114:
+ 214:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** 
+ 215:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** /**
+ 216:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @brief  Configures the SysTick clock source.
+ 217:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @param  SysTick_CLKSource: specifies the SysTick clock source.
+ 218:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *   This parameter can be one of the following values:
+ 219:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg SysTick_CLKSource_HCLK_Div8: AHB clock divided by 8 selected as SysTick clock source.
+ 220:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   *     @arg SysTick_CLKSource_HCLK: AHB clock selected as SysTick clock source.
+ 221:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   * @retval None
+ 222:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   */
+ 223:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource)
+ 224:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** {
+ 217              		.loc 1 224 0
+ 218              		.cfi_startproc
+ 219              		@ args = 0, pretend = 0, frame = 0
+ 220              		@ frame_needed = 0, uses_anonymous_args = 0
+ 221              		@ link register save eliminated.
+ 222              	.LVL17:
+ 223 0098 044B     		ldr	r3, .L22
+ 225:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   /* Check the parameters */
+ 226:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   assert_param(IS_SYSTICK_CLK_SOURCE(SysTick_CLKSource));
+ 227:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   if (SysTick_CLKSource == SysTick_CLKSource_HCLK)
+ 228:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 229:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     SysTick->CTRL |= SysTick_CLKSource_HCLK;
+ 224              		.loc 1 229 0
+ 225 009a 1A68     		ldr	r2, [r3]
+ 227:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 226              		.loc 1 227 0
+ 227 009c 0428     		cmp	r0, #4
+ 228              		.loc 1 229 0
+ 229 009e 0CBF     		ite	eq
+ 230 00a0 42F00402 		orreq	r2, r2, #4
+ 230:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 231:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   else
+ 232:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   {
+ 233:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****     SysTick->CTRL &= SysTick_CLKSource_HCLK_Div8;
+ 231              		.loc 1 233 0
+ 232 00a4 22F00402 		bicne	r2, r2, #4
+ 233 00a8 1A60     		str	r2, [r3]
+ 234:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c ****   }
+ 235:../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.c **** }
+ 234              		.loc 1 235 0
+ 235 00aa 7047     		bx	lr
+ 236              	.L23:
+ 237              		.align	2
+ 238              	.L22:
+ 239 00ac 10E000E0 		.word	-536813552
+ 240              		.cfi_endproc
+ 241              	.LFE114:
+ 243              	.Letext0:
+ 244              		.file 2 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/machine/_default_types.h"
+ 245              		.file 3 "/opt/gcc-arm-none-eabi-7-2017-q4-major/arm-none-eabi/include/sys/_stdint.h"
+ 246              		.file 4 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Include/core_cm4.h"
+ 247              		.file 5 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 248              		.file 6 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/CMSIS/Device/ST/STM32F4xx/Include
+ 249              		.file 7 "../STLibs//STM32F4xx_DSP_StdPeriph_Lib_V1.0.1/Libraries/STM32F4xx_StdPeriph_Driver/inc/mi
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 misc.c
+     /tmp/ccfl7VpD.s:16     .text:0000000000000000 $t
+     /tmp/ccfl7VpD.s:23     .text:0000000000000000 NVIC_PriorityGroupConfig
+     /tmp/ccfl7VpD.s:43     .text:0000000000000010 $d
+     /tmp/ccfl7VpD.s:47     .text:0000000000000014 $t
+     /tmp/ccfl7VpD.s:54     .text:0000000000000014 NVIC_Init
+     /tmp/ccfl7VpD.s:131    .text:0000000000000064 $d
+     /tmp/ccfl7VpD.s:136    .text:000000000000006c $t
+     /tmp/ccfl7VpD.s:143    .text:000000000000006c NVIC_SetVectorTable
+     /tmp/ccfl7VpD.s:163    .text:000000000000007c $d
+     /tmp/ccfl7VpD.s:167    .text:0000000000000080 $t
+     /tmp/ccfl7VpD.s:174    .text:0000000000000080 NVIC_SystemLPConfig
+     /tmp/ccfl7VpD.s:204    .text:0000000000000094 $d
+     /tmp/ccfl7VpD.s:208    .text:0000000000000098 $t
+     /tmp/ccfl7VpD.s:215    .text:0000000000000098 SysTick_CLKSourceConfig
+     /tmp/ccfl7VpD.s:239    .text:00000000000000ac $d
+
+NO UNDEFINED SYMBOLS
